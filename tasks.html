@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tasks | Plan Well</title>
+  <title>Tasks | ActionIQ</title>
   <link rel="stylesheet" href="styles.css?v=task-calendar">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
@@ -25,7 +25,7 @@
       <header class="topbar">
         <div>
           <p class="eyebrow">Task board</p>
-          <h1>Keep one-off work clear and separate.</h1>
+          <h1>Every task, tagged to its goal and milestone.</h1>
         </div>
         <div class="top-actions">
           <div class="today-readout" data-today-readout></div>
@@ -33,7 +33,7 @@
         </div>
       </header>
 
-      <section class="metric-grid command-metric-grid task-command-deck" aria-label="Task summary">
+      <section class="metric-grid command-metric-grid task-command-deck" aria-label="Goal task summary">
         <article class="metric-card primary command-card task-reactor-card">
           <div class="metric-visual task-stack-visual task-page-stack-visual" aria-hidden="true">
             <span></span>
@@ -41,9 +41,9 @@
             <span></span>
           </div>
           <div class="metric-copy">
-            <span>Open tasks</span>
-            <strong data-metric="openTasks">0</strong>
-            <p>Loose ends still active</p>
+            <span>Total tasks</span>
+            <strong data-metric="goalTaskTotal">0</strong>
+            <p>Across all goals</p>
           </div>
         </article>
         <article class="metric-card command-card checkpoint-card">
@@ -53,9 +53,9 @@
             <span></span>
           </div>
           <div class="metric-copy">
-            <span>Tasks finished</span>
-            <strong data-metric="tasksDone">0</strong>
-            <p>Small wins cleared</p>
+            <span>Completed</span>
+            <strong data-metric="goalTaskDone">0</strong>
+            <p>Tagged done</p>
           </div>
         </article>
         <article class="metric-card command-card cadence-card">
@@ -65,9 +65,9 @@
             <span></span>
           </div>
           <div class="metric-copy">
-            <span>Linked habits</span>
-            <strong data-metric="linkedTasks">0</strong>
-            <p>Tasks attached to routines</p>
+            <span>Pending</span>
+            <strong data-metric="goalTaskPending">0</strong>
+            <p>Still open</p>
           </div>
         </article>
         <article class="metric-card command-card beacon-card">
@@ -77,11 +77,30 @@
             <span></span>
           </div>
           <div class="metric-copy">
-            <span>Total tasks</span>
-            <strong data-metric="taskCount">0</strong>
-            <p>Everything on the board</p>
+            <span>Completion rate</span>
+            <strong data-metric="goalTaskRate">0%</strong>
+            <p>Of all goal tasks</p>
           </div>
         </article>
+      </section>
+
+      <section class="panel command-panel in-page-console task-list-panel task-full-list-panel">
+        <div class="panel-hologram task-board-hologram" aria-hidden="true">
+          <span></span>
+          <span></span>
+        </div>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Goal task board</p>
+            <h2>Where every goal is won or lost, one task at a time</h2>
+          </div>
+        </div>
+        <p class="form-guidance">The more of a goal's tasks that are complete, the higher the probability that goal gets achieved. Tick a task off here to update its milestone and goal automatically.</p>
+        <div class="goal-task-board" data-goal-task-board></div>
+        <div class="empty-state" data-empty="goalTasks">
+          <strong>No goal tasks yet.</strong>
+          <span>Add tasks to a milestone from the Goals page. They'll show up here with their goal and milestone context.</span>
+        </div>
       </section>
 
       <section class="workspace-grid tasks-page-layout">
@@ -93,11 +112,11 @@
           </div>
           <div class="panel-heading">
             <div>
-              <p class="eyebrow">Add task</p>
-              <h2>Task quick access</h2>
+              <p class="eyebrow">Add quick task</p>
+              <h2>One-off tasks (not tied to a goal)</h2>
             </div>
           </div>
-          <p class="form-guidance">Add homework, chores, errands, or any one-off task. Deadlines decide where linked tasks appear.</p>
+          <p class="form-guidance">Use this for loose ends that don't belong to a goal's milestones &mdash; errands, admin, anything one-off. Deadlines decide where linked tasks appear.</p>
           <form class="entry-form task-entry-form" data-task-form>
             <label>
               Task title
@@ -146,8 +165,8 @@
           </div>
           <div class="panel-heading">
             <div>
-              <p class="eyebrow">Task board</p>
-              <h2>All tasks</h2>
+              <p class="eyebrow">Quick task list</p>
+              <h2>One-off tasks</h2>
             </div>
           </div>
           <div class="task-list" data-task-list></div>

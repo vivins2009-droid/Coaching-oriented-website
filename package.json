@@ -1,9 +1,9 @@
 {
   "name": "plan-well-desktop",
   "version": "1.0.0",
-  "description": "Plan Well - Teen Goal and Habit Tracker Desktop App",
+  "description": "ActionIQ - Executive Coaching Desktop App. Maximise your Leadership Potential",
   "main": "electron-main.js",
-  "author": "Plan Well Team",
+  "author": "ActionIQ Team",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -14,7 +14,7 @@
   },
   "build": {
     "appId": "com.planwell.app",
-    "productName": "Plan Well",
+    "productName": "ActionIQ",
     "directories": {
       "output": "dist"
     },
@@ -40,7 +40,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Plan Well"
+      "shortcutName": "ActionIQ"
     },
     "mac": {
       "target": [

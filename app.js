@@ -98,7 +98,7 @@ function unlockProAccount(code = "") {
   localStorage.setItem("planwell_pro_unlocked", "true");
   window.PLANWELL_IS_PRO = true;
   document.querySelectorAll(".paywall-backdrop").forEach(el => el.remove());
-  alert("Plan Well Pro Activated Successfully! Enjoy unlimited goals, habits, analytics and cloud sync.");
+  alert("ActionIQ Pro Activated Successfully! Enjoy unlimited goals, habits, analytics and cloud sync.");
   if (typeof render === "function") render();
 }
 
@@ -127,13 +127,13 @@ function showPaywallModal(options = {}) {
       position: relative; overflow: hidden;
     ">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-        <span style="background:linear-gradient(90deg, #00f6ff, #00ffd0); color:#02070d; font-weight:800; font-size:0.75rem; padding:4px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:1px;">Plan Well Pro Paywall</span>
+        <span style="background:linear-gradient(90deg, #00f6ff, #00ffd0); color:#02070d; font-weight:800; font-size:0.75rem; padding:4px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:1px;">ActionIQ Pro Paywall</span>
         <button onclick="this.closest('.paywall-backdrop').remove()" style="background:none; border:none; color:#7caab4; font-size:1.6rem; cursor:pointer;">&times;</button>
       </div>
 
       <h2 style="margin:0 0 8px 0; font-size:1.45rem; font-weight:800; color:#ffffff;">Unlock Pro: ${feature}</h2>
       <p style="margin:0 0 20px 0; font-size:0.92rem; color:#7caab4; line-height:1.5;">
-        Free Plan includes <strong>1 Goal, 3 Habits, 3 Tasks</strong>, and up to <strong>3 linked micro success steps</strong>. Upgrade to <strong>Plan Well Pro</strong> to unlock unlimited goals, habits, and connections.
+        Free Plan includes <strong>1 Goal, 3 Habits, 3 Tasks</strong>, and up to <strong>3 linked milestone tasks</strong>. Upgrade to <strong>ActionIQ Pro</strong> to unlock unlimited goals, habits, and connections.
       </p>
 
       <div style="background:rgba(0, 246, 255, 0.06); border:1px solid rgba(0, 246, 255, 0.2); border-radius:14px; padding:16px; margin-bottom:24px;">
@@ -379,7 +379,7 @@ async function bootstrapUserState(session) {
   } catch (error) {
     applyState(accountSnapshot);
     setSyncStatus("Using local cache - sync failed");
-    console.error("Plan Well sync failed", error);
+    console.error("ActionIQ sync failed", error);
   }
 }
 
@@ -542,6 +542,7 @@ function normalizeHabit(habit) {
     weeklyGoal,
     category: String(habit?.category || DEFAULT_CATEGORIES[0]),
     scheduleDays,
+    startDate: String(habit?.startDate || ""),
     supportedGoalId: String(habit?.supportedGoalId || ""),
     supportedTaskId: String(habit?.supportedTaskId || ""),
     checks,
@@ -766,6 +767,25 @@ function goalTasksFlat(goal) {
   return goal.milestones.flatMap((milestone) => milestone.tasks);
 }
 
+function allGoalTasksFlat() {
+  return state.goals.flatMap((goal) =>
+    goal.milestones.flatMap((milestone) =>
+      milestone.tasks.map((task) => ({ task, milestone, goal }))
+    )
+  );
+}
+
+function goalTaskTimeProgress(task) {
+  if (task.done) return 100;
+  const start = dateFromValue(task.startDate);
+  const end = dateFromValue(task.endDate);
+  if (!start || !end || end <= start) return 0;
+  const now = new Date();
+  if (now <= start) return 0;
+  if (now >= end) return 100;
+  return Math.round(((now - start) / (end - start)) * 100);
+}
+
 function goalProgress(goal) {
   const tasks = goalTasksFlat(goal);
   if (!tasks.length) return goal.complete ? 100 : 0;
@@ -983,13 +1003,14 @@ function supportingTasksForTaskItem(goal, step) {
   return state.tasks.filter((task) => task.supportedGoalId === goal.id && task.supportedTaskId === step.id);
 }
 
-function makeHabit(name, category, scheduleDays = ALL_WEEKDAYS, supportedGoalId = "", supportedTaskId = "", durationMinutes = 0, timeOfDay = "") {
+function makeHabit(name, category, scheduleDays = ALL_WEEKDAYS, supportedGoalId = "", supportedTaskId = "", durationMinutes = 0, timeOfDay = "", startDate = "") {
   return {
     id: uid("habit"),
     name: String(name || "").trim() || "Untitled habit",
     scheduleDays: normalizeScheduleDays(scheduleDays),
     weeklyGoal: normalizeScheduleDays(scheduleDays).length,
     category: String(category || fallbackCategory()),
+    startDate: String(startDate || ""),
     supportedGoalId: String(supportedGoalId || ""),
     supportedTaskId: String(supportedTaskId || ""),
     durationMinutes: Number(durationMinutes) || 0,
@@ -1075,12 +1096,15 @@ function taskTypeOptionsMarkup(selected = "task") {
   `;
 }
 
-function deadlineFieldMarkup({ id, name = "deadline", value = "", required = false, label = "Deadline" }) {
+function deadlineFieldMarkup({ id, name = "deadline", value = "", required = false, label = "Deadline", emptyLabel = "" }) {
+  const lowerLabel = label.toLowerCase();
+  const article = /^[aeiou]/.test(lowerLabel) ? "an" : "a";
+  const placeholder = emptyLabel || `Pick ${article} ${lowerLabel}`;
   return `
-    <div class="form-field date-field deadline-date-field ${required ? "is-required-date" : ""}" data-date-field ${required ? "data-required-date" : ""}>
+    <div class="form-field date-field deadline-date-field ${required ? "is-required-date" : ""}" data-date-field data-empty-label="${escapeHtml(placeholder)}" ${required ? "data-required-date" : ""}>
       <label for="${escapeHtml(id)}">${escapeHtml(label)}</label>
       <button class="date-trigger" type="button" data-date-trigger aria-haspopup="dialog" aria-expanded="false" aria-describedby="${escapeHtml(id)}-hint">
-        <span class="date-value" data-date-value id="${escapeHtml(id)}-hint">Pick a date</span>
+        <span class="date-value" data-date-value id="${escapeHtml(id)}-hint">${escapeHtml(placeholder)}</span>
         <span class="date-icon" aria-hidden="true"></span>
       </button>
       <input id="${escapeHtml(id)}" name="${escapeHtml(name)}" type="hidden" value="${escapeHtml(value)}" data-date-input>
@@ -1200,14 +1224,20 @@ function milestonesMarkup(goal) {
   `;
 }
 
+function isMilestoneComplete(milestone) {
+  return milestone.tasks.length > 0 && milestone.tasks.every((task) => task.done);
+}
+
 function milestoneMarkup(goal, milestone) {
   const tasks = milestone.tasks;
   const done = tasks.filter((task) => task.done).length;
+  const complete = isMilestoneComplete(milestone);
   return `
-    <div class="milestone-item" data-milestone-id="${milestone.id}">
+    <div class="milestone-item ${complete ? "is-complete" : ""}" data-milestone-id="${milestone.id}">
       <div class="milestone-item-head">
         <div>
           <strong>${escapeHtml(milestone.title)}</strong>
+          ${complete ? `<span class="milestone-complete-badge">Complete</span>` : ""}
           <span>${milestone.startDate ? `Start: ${formatDate(milestone.startDate)} | ` : ""}${milestone.endDate ? `End: ${formatDate(milestone.endDate)} | ` : ""}${done} / ${tasks.length} tasks done</span>
         </div>
         <div class="milestone-item-actions">
@@ -1672,6 +1702,60 @@ function renderTaskGoalOptions() {
   });
 }
 
+function renderGoalTaskBoard() {
+  const entries = allGoalTasksFlat();
+  const total = entries.length;
+  const done = entries.filter((entry) => entry.task.done).length;
+  const pending = total - done;
+  const rate = total ? Math.round((done / total) * 100) : 0;
+
+  setText('[data-metric="goalTaskTotal"]', total);
+  setText('[data-metric="goalTaskDone"]', done);
+  setText('[data-metric="goalTaskPending"]', pending);
+  setText('[data-metric="goalTaskRate"]', `${rate}%`);
+
+  document.querySelectorAll("[data-goal-task-board]").forEach((board) => {
+    board.innerHTML = "";
+    const sorted = [...entries].sort((a, b) => {
+      const doneDelta = Number(a.task.done) - Number(b.task.done);
+      if (doneDelta) return doneDelta;
+      if (a.task.endDate && b.task.endDate) return a.task.endDate.localeCompare(b.task.endDate);
+      if (a.task.endDate) return -1;
+      if (b.task.endDate) return 1;
+      return 0;
+    });
+    sorted.forEach(({ task, milestone, goal }) => board.append(goalTaskBoardRow(task, milestone, goal)));
+    toggleEmpty("goalTasks", total === 0);
+  });
+}
+
+function goalTaskBoardRow(task, milestone, goal) {
+  const row = document.createElement("div");
+  const progress = goalTaskTimeProgress(task);
+  row.className = `goal-task-row ${task.done ? "is-complete" : ""}`;
+  row.dataset.goalTaskId = task.id;
+  row.innerHTML = `
+    <label class="step-check goal-task-check">
+      <input type="checkbox" data-goal-task-toggle="${task.id}" ${task.done ? "checked" : ""}>
+      <span>${escapeHtml(task.title)}</span>
+    </label>
+    <div class="goal-task-context">
+      <span class="goal-task-chip goal-task-chip--goal">${escapeHtml(goal.title)}</span>
+      <span class="goal-task-chip goal-task-chip--milestone">${escapeHtml(milestone.title)}</span>
+    </div>
+    <div class="goal-task-dates">
+      ${task.startDate ? `<span>Start: ${formatDate(task.startDate)}</span>` : ""}
+      ${task.endDate ? `<span>End: ${formatDate(task.endDate)}</span>` : ""}
+    </div>
+    <div class="progress-track goal-task-progress"><span style="width: ${progress}%"></span></div>
+  `;
+  row.querySelector("[data-goal-task-toggle]").addEventListener("change", (event) => {
+    task.done = event.target.checked;
+    saveAndRender();
+  });
+  return row;
+}
+
 function renderTasks() {
   document.querySelectorAll("[data-task-list]").forEach((list) => {
     list.innerHTML = "";
@@ -2080,10 +2164,12 @@ function dailyHabitRow(habit, key) {
   }
   const durLabel  = durationLabel(habit.durationMinutes);
   const todLabel  = habit.timeOfDay || "";
+  const formationDate = habitFormationDate(habit);
   row.innerHTML = `
     <div class="daily-habit-main">
       <strong>${escapeHtml(habit.name)}</strong>
-      <span>${escapeHtml(habit.category || fallbackCategory())} | ${formatHabitDay(key)} | ${escapeHtml(scheduleLabel(habit))}</span>
+      <span>${escapeHtml(habit.category || fallbackCategory())} | ${formatHabitDay(key)} | ${escapeHtml(scheduleLabel(habit))}${habit.startDate ? ` | start: ${formatDate(habit.startDate)}` : ""}</span>
+      ${formationDate ? `<div class="habit-formation-note"><span>21-day formation window</span><strong>Habit forms by ${formatDate(formationDate)}</strong></div>` : ""}
       ${durLabel || todLabel ? `
         <div class="habit-session-chips">
           ${durLabel ? `<span class="habit-chip habit-chip--duration">${escapeHtml(durLabel)}</span>` : ""}
@@ -2195,6 +2281,8 @@ function habitEditMarkup(habit) {
         </div>
         <div class="weekday-picker" data-edit-weekday-picker>${scheduleDayChoicesMarkup(habit.scheduleDays)}</div>
       </div>
+      ${deadlineFieldMarkup({ id: `habit-start-${habit.id}`, name: "startDate", value: habit.startDate, label: "Start date", emptyLabel: "Pick a start date for this habit" })}
+      <small data-edit-habit-formation-hint>${habitFormationHintText(habit)}</small>
       <label class="goal-support-field">
         Supports goal step
         <select name="supportedStepKey">${goalTaskSelectMarkup(habit.supportedGoalId, habit.supportedTaskId)}</select>
@@ -2258,6 +2346,12 @@ function bindHabitEditControls(row, habit) {
     if (!picker) return;
     picker.innerHTML = scheduleDayChoicesMarkup(selectedDays);
   };
+  const refreshFormationHint = () => {
+    const hint = row.querySelector("[data-edit-habit-formation-hint]");
+    const startInput = form?.querySelector('[name="startDate"]');
+    if (!hint) return;
+    hint.textContent = habitFormationHintText({ startDate: startInput?.value || "", scheduleDays: selectedDays });
+  };
   row.addEventListener("click", (event) => {
     const weekday = event.target.closest("[data-edit-weekday]");
     if (!weekday) return;
@@ -2265,6 +2359,11 @@ function bindHabitEditControls(row, habit) {
     const next = selectedDays.includes(day) ? selectedDays.filter((item) => item !== day) : [...selectedDays, day];
     selectedDays = normalizeScheduleDays(next.length ? next : selectedDays);
     renderLocalDays();
+    refreshFormationHint();
+  });
+  form?.querySelector('[name="startDate"]')?.addEventListener("change", refreshFormationHint);
+  row.addEventListener("click", (event) => {
+    if (event.target.closest("[data-date-day]")) window.setTimeout(refreshFormationHint, 0);
   });
   form?.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -2274,6 +2373,7 @@ function bindHabitEditControls(row, habit) {
     habit.category = String(data.get("category") || fallbackCategory());
     habit.scheduleDays = normalizeScheduleDays(selectedDays);
     habit.weeklyGoal = habit.scheduleDays.length;
+    habit.startDate = String(data.get("startDate") || "");
     habit.supportedGoalId = support.goalId;
     habit.supportedTaskId = support.stepId;
     const editHours = parseInt(data.get("durationHours") || "0", 10) || 0;
@@ -2359,7 +2459,7 @@ function ensureAuthScreen() {
     </div>
     <article class="auth-card">
       <div class="auth-copy">
-        <p class="eyebrow">Plan well</p>
+        <p class="eyebrow">ActionIQ</p>
         <h1>Your progress, saved to your account.</h1>
         <p>Log in or sign up to keep goals, habits, tasks, categories, reflections, and XP connected to you across devices.</p>
       </div>
@@ -2635,9 +2735,9 @@ function dateToValue(date) {
   return `${year}-${month}-${day}`;
 }
 
-function formatDisplayDate(value) {
+function formatDisplayDate(value, emptyLabel = "Pick a deadline") {
   const date = dateFromValue(value);
-  if (!date) return "Pick a deadline";
+  if (!date) return emptyLabel;
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
@@ -2726,8 +2826,27 @@ function syncDateHints() {
   document.querySelectorAll("[data-date-field]").forEach((field) => {
     const input = field.querySelector("[data-date-input]");
     const value = field.querySelector("[data-date-value]");
-    if (value) value.textContent = formatDisplayDate(input?.value);
+    if (value) value.textContent = formatDisplayDate(input?.value, field.dataset.emptyLabel || "Pick a deadline");
     field.classList.toggle("has-date", Boolean(input?.value));
+  });
+  updateHabitFormationHints();
+}
+
+function updateHabitFormationHints() {
+  document.querySelectorAll("[data-habit-form]").forEach((form) => {
+    const hint = form.querySelector("[data-habit-formation-hint]");
+    if (!hint) return;
+    const startInput = form.querySelector('[name="startDate"]');
+    const startValue = startInput?.value || "";
+    const daily = selectedScheduleDays(form).length === 7;
+    if (!startValue) {
+      hint.textContent = "Optional. Used to project when a daily habit will form (21 days).";
+    } else if (!daily) {
+      hint.textContent = "21-day formation projection only applies to habits repeated every day.";
+    } else {
+      const formed = dateToValue(addDays(dateFromValue(startValue), 21));
+      hint.textContent = `This daily habit is projected to form by ${formatDate(formed)}.`;
+    }
   });
 }
 
@@ -2935,6 +3054,7 @@ function renderWeekdayPickers() {
         const next = current.includes(day) ? current.filter((item) => item !== day) : [...current, day];
         form._scheduleDays = normalizeScheduleDays(next.length ? next : current);
         renderWeekdayPickers();
+        updateHabitFormationHints();
       });
     });
   });
@@ -2944,6 +3064,24 @@ function scheduleLabel(habit) {
   const days = normalizeScheduleDays(habit.scheduleDays);
   if (days.length === 7) return "Every day";
   return days.map((day) => DAYS[day]).join(", ");
+}
+
+function isDailyHabit(habit) {
+  return normalizeScheduleDays(habit.scheduleDays).length === 7;
+}
+
+function habitFormationDate(habit) {
+  if (!isDailyHabit(habit) || !habit.startDate) return "";
+  const start = dateFromValue(habit.startDate);
+  if (!start) return "";
+  return dateToValue(addDays(start, 21));
+}
+
+function habitFormationHintText(habit) {
+  if (!habit.startDate) return "Optional. Used to project when a daily habit will form (21 days).";
+  if (!isDailyHabit(habit)) return "21-day formation projection only applies to habits repeated every day.";
+  const formed = habitFormationDate(habit);
+  return formed ? `This daily habit is projected to form by ${formatDate(formed)}.` : "";
 }
 
 function durationLabel(minutes) {
@@ -3103,7 +3241,8 @@ function bindForms() {
         support.goalId,
         support.stepId,
         totalDurationMin,
-        timeOfDay
+        timeOfDay,
+        String(form.get("startDate") || "")
       );
       newHabit._timeStart = timeStart;
       newHabit._timeEnd   = timeEnd;
@@ -3114,6 +3253,7 @@ function bindForms() {
       if (weeklyInput) weeklyInput.value = 7;
       renderWeekdayPickers();
       renderGoalSupportPickers();
+      window.setTimeout(syncDateHints, 0);
       saveAndRender();
       showSaveStatus("habit");
     });
@@ -3169,6 +3309,7 @@ function render() {
   renderGoalSupportPickers();
   renderGoals();
   renderCategories();
+  renderGoalTaskBoard();
   renderTasks();
   renderHabits();
   render21DayHabitsSection();
@@ -3642,7 +3783,7 @@ async function initializeApp() {
     } catch (error) {
       applyState(loadState());
       setSyncStatus("Using local cache - auth failed");
-      console.error("Plan Well auth failed", error);
+      console.error("ActionIQ auth failed", error);
     }
   } else {
     applyState(createEmptyState());

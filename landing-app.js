@@ -163,28 +163,28 @@ function detectOSAndHighlightDownload() {
 
   if (isMac) {
     if (primaryBtn) {
-      primaryBtn.href = "downloads/PlanWell-1.0.0.dmg";
-      primaryBtn.setAttribute("download", "PlanWell-1.0.0.dmg");
+      primaryBtn.href = "downloads/ActionIQ-1.0.0.dmg";
+      primaryBtn.setAttribute("download", "ActionIQ-1.0.0.dmg");
     }
     if (primaryLabel) primaryLabel.textContent = "Download for macOS (.dmg)";
 
     if (secondaryBtn) {
-      secondaryBtn.href = "downloads/PlanWell-Setup-1.0.0.exe";
-      secondaryBtn.setAttribute("download", "PlanWell-Setup-1.0.0.exe");
+      secondaryBtn.href = "downloads/ActionIQ-Setup-1.0.0.exe";
+      secondaryBtn.setAttribute("download", "ActionIQ-Setup-1.0.0.exe");
     }
     if (secondaryLabel) secondaryLabel.textContent = "Download for Windows (.exe)";
 
     if (osLabel) osLabel.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> macOS Auto-detected &bull; Intel &amp; Apple Silicon Installer Ready`;
   } else {
     if (primaryBtn) {
-      primaryBtn.href = "downloads/PlanWell-Setup-1.0.0.exe";
-      primaryBtn.setAttribute("download", "PlanWell-Setup-1.0.0.exe");
+      primaryBtn.href = "downloads/ActionIQ-Setup-1.0.0.exe";
+      primaryBtn.setAttribute("download", "ActionIQ-Setup-1.0.0.exe");
     }
     if (primaryLabel) primaryLabel.textContent = "Download for Windows (.exe)";
 
     if (secondaryBtn) {
-      secondaryBtn.href = "downloads/PlanWell-1.0.0.dmg";
-      secondaryBtn.setAttribute("download", "PlanWell-1.0.0.dmg");
+      secondaryBtn.href = "downloads/ActionIQ-1.0.0.dmg";
+      secondaryBtn.setAttribute("download", "ActionIQ-1.0.0.dmg");
     }
     if (secondaryLabel) secondaryLabel.textContent = "Download for macOS (.dmg)";
 
@@ -357,6 +357,6 @@ function switchPayTab(type) {
 
 function processPaymentSubmit() {
   localStorage.setItem("planwell_pro_unlocked", "true");
-  alert("Payment Successful! Plan Well Pro features have been unlocked on your account.");
+  alert("Payment Successful! ActionIQ Pro features have been unlocked on your account.");
   closeCheckoutModal();
 }

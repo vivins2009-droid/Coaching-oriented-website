@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Habits | Plan Well</title>
+  <title>Habits | ActionIQ</title>
   <link rel="stylesheet" href="styles.css?v=task-calendar">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
@@ -69,6 +69,16 @@
             <div class="category-picker" data-category-picker></div>
             <small>Choose the goal theme this habit supports.</small>
           </label>
+          <div class="form-field date-field deadline-date-field" data-date-field data-empty-label="Pick a start date for this habit">
+            <label for="habit-start-date">Start date</label>
+            <button class="date-trigger" type="button" data-date-trigger aria-haspopup="dialog" aria-expanded="false" aria-describedby="habit-start-date-hint">
+              <span class="date-value" data-date-value id="habit-start-date-hint">Pick a start date for this habit</span>
+              <span class="date-icon" aria-hidden="true"></span>
+            </button>
+            <input id="habit-start-date" name="startDate" type="hidden" data-date-input>
+            <div class="date-popover" data-date-popover hidden role="dialog" aria-label="Choose start date"></div>
+            <small data-habit-formation-hint></small>
+          </div>
           <div class="habit-session-field">
             <div class="habit-session-field-head">
               <strong>Session duration</strong>

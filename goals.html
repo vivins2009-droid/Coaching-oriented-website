@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Goals | Plan Well</title>
+  <title>Goals | ActionIQ</title>
   <link rel="stylesheet" href="styles.css?v=task-calendar">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
@@ -120,7 +120,7 @@
                 <option value="Decision Making">Decision Making</option>
               </select>
             </label>
-            <div class="form-field date-field" data-date-field>
+            <div class="form-field date-field" data-date-field data-empty-label="Pick a start date">
               <label for="goal-start-full">Start date</label>
               <button class="date-trigger" type="button" data-date-trigger aria-haspopup="dialog" aria-expanded="false" aria-describedby="goal-start-hint-full">
                 <span class="date-value" data-date-value id="goal-start-hint-full">Pick a start date</span>
@@ -129,7 +129,7 @@
               <input id="goal-start-full" name="startDate" type="hidden" data-date-input>
               <div class="date-popover" data-date-popover hidden role="dialog" aria-label="Choose start date"></div>
             </div>
-            <div class="form-field date-field" data-date-field>
+            <div class="form-field date-field" data-date-field data-empty-label="Pick an end date">
               <label for="goal-end-full">Goal end date</label>
               <button class="date-trigger" type="button" data-date-trigger aria-haspopup="dialog" aria-expanded="false" aria-describedby="goal-end-hint-full">
                 <span class="date-value" data-date-value id="goal-end-hint-full">Pick an end date</span>
