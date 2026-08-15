@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Plan Well Mobile | Teen Progress Tracker</title>
+  <title>Plan Well Mobile | Coaching Tracker</title>
   <link rel="stylesheet" href="../styles.css?v=mobile">
   <link rel="stylesheet" href="mobile-styles.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -80,10 +80,10 @@
         <div class="home-hero mobile-hero">
           <!-- Text Content First -->
           <div class="home-copy">
-            <p class="eyebrow">Teen goal and habit tracker</p>
+            <p class="eyebrow">Executive coaching tracker</p>
             <h1>Plan well</h1>
             <p class="home-brief">
-              Your personal mobile progress hub. Set goals, track daily habits, manage tasks, and earn rewards anywhere.
+              Your personal mobile coaching hub. Set goals, track daily habits, and manage tasks anywhere.
             </p>
             <div class="home-actions mobile-hero-actions">
               <a class="text-button link-button primary-btn" href="#dashboard">Dashboard</a>
@@ -196,22 +196,6 @@
               </div>
             </article>
 
-            <!-- 4th: Rewards (Unlock Lane) -->
-            <article class="summary-lane rewards-lane" data-summary-rewards>
-              <div class="summary-lane-main">
-                <div class="summary-lane-heading">
-                  <div>
-                    <p class="eyebrow">Rewards</p>
-                    <h3>Unlock Lane</h3>
-                  </div>
-                  <a class="text-button link-button compact-button" href="../rewards.html">Open</a>
-                </div>
-                <div class="summary-cell-grid mobile-grid">
-                  <div class="summary-cell"><span>XP</span><strong data-metric="weeklyXp">0</strong></div>
-                  <div class="summary-cell"><span>Level</span><strong data-profile-level>Level 1</strong></div>
-                </div>
-              </div>
-            </article>
           </div>
         </section>
 
@@ -304,12 +288,6 @@
         </svg>
         <span>Tasks</span>
       </a>
-      <a href="../rewards.html" class="mobile-nav-item">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-        </svg>
-        <span>Rewards</span>
-      </a>
     </nav>
   </div>
 
@@ -317,7 +295,7 @@
     // Make navigateToSection globally accessible for onclick attributes
     let navigateToSection;
     document.addEventListener('DOMContentLoaded', () => {
-      const sections = ['home', 'dashboard', 'goals-section', 'habits-section', 'tasks-section', 'rewards-section'];
+      const sections = ['home', 'dashboard', 'goals-section', 'habits-section', 'tasks-section'];
       
       navigateToSection = function(targetId) {
         const cleanId = targetId.replace('#', '');

@@ -52,7 +52,7 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadFile('index.html');
+  mainWindow.loadFile('app.html');
 
   // Handle external link clicks (like Google OAuth) securely in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

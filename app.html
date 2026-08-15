@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plan well | Teen Progress Tracker</title>
+  <title>Plan Well | Executive Coaching Tracker</title>
   <link rel="stylesheet" href="styles.css?v=task-calendar">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
@@ -18,7 +18,6 @@
         <a class="nav-item" href="goals.html">Goals</a>
         <a class="nav-item" href="habits.html">Habits</a>
         <a class="nav-item" href="tasks.html">Tasks</a>
-        <a class="nav-item" href="rewards.html">Rewards</a>
       </nav>
     </aside>
 
@@ -26,11 +25,11 @@
       <section class="scroll-section home-section" id="home">
         <div class="home-hero">
           <div class="home-copy">
-            <p class="eyebrow">Teen goal and habit tracker</p>
+            <p class="eyebrow">Executive coaching tracker</p>
             <h1>Plan well</h1>
             <p class="home-brief">
-              A personal progress space for teenagers to set their own goals, break them into visible steps,
-              build daily habits, and connect consistent effort to rewards. Everything starts at zero, so the
+              A personal coaching space for coachees to set their goals, break them into milestones and tasks,
+              build supporting habits, and track consistent progress. Everything starts at zero, so the
               dashboard only reflects what the user chooses to add.
             </p>
             <div class="home-actions">
@@ -51,7 +50,6 @@
             </div>
             <div class="hud-chip chip-goals">Goals</div>
             <div class="hud-chip chip-habits">Habits</div>
-            <div class="hud-chip chip-rewards">Rewards</div>
           </div>
         </div>
       </section>
@@ -59,7 +57,7 @@
       <section class="scroll-section" id="dashboard">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Teen goal and habit tracker</p>
+            <p class="eyebrow">Executive coaching tracker</p>
             <h1>Build the week you actually want.</h1>
           </div>
           <div class="top-actions" style="display: flex; gap: 10px; align-items: center;">
@@ -208,33 +206,6 @@
               </div>
             </article>
 
-            <!-- 4th: Rewards (Unlock Lane) -->
-            <article class="summary-lane rewards-lane" data-summary-rewards>
-              <div class="summary-lane-visual reward-crystal" aria-hidden="true">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <div class="summary-lane-main">
-                <div class="summary-lane-heading">
-                  <div>
-                    <p class="eyebrow">Rewards</p>
-                    <h2>Unlock lane</h2>
-                  </div>
-                  <a class="text-button link-button compact-button" href="rewards.html" data-dashboard-section-link>Go to rewards</a>
-                </div>
-                <div class="summary-cell-grid">
-                  <div class="summary-cell"><span>XP</span><strong data-metric="weeklyXp">0</strong></div>
-                  <div class="summary-cell"><span>Next unlock</span><strong data-metric="nextUnlock">0%</strong></div>
-                  <div class="summary-cell"><span>Level</span><strong data-profile-level>Level 1</strong></div>
-                  <div class="summary-cell wide-cell">
-                    <span>Reward status</span>
-                    <strong data-summary-reward-status>No XP yet</strong>
-                    <small>Rewards editing comes later</small>
-                  </div>
-                </div>
-              </div>
-            </article>
           </div>
         </section>
 

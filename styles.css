@@ -8804,3 +8804,94 @@ input[type="checkbox"][data-habit-done-checkbox]:checked {
   color: #c4b5fd;
 }
 
+
+/* Goal milestone/task nesting (coaching data model) */
+.cascade-section-label {
+  margin-top: 14px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #00f6ff;
+  opacity: 0.85;
+}
+
+.cascade-section-label-task {
+  margin-top: 10px;
+  color: #a78bfa;
+}
+
+.milestone-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(0, 246, 255, 0.2);
+}
+
+.milestone-item {
+  background: rgba(0, 246, 255, 0.04);
+  border: 1px solid rgba(0, 246, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.milestone-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.milestone-item-head span {
+  display: block;
+  font-size: 0.78rem;
+  color: #7caab4;
+  margin-top: 2px;
+}
+
+.milestone-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.milestone-task-list {
+  margin-top: 10px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(167, 139, 250, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.milestone-task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+
+.milestone-task-dates {
+  color: #7caab4;
+  font-size: 0.75rem;
+}
+
+.add-milestone-form,
+.add-task-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.add-milestone-form label,
+.add-task-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+}
