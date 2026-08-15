@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Goals | ActionIQ</title>
-  <link rel="stylesheet" href="styles.css?v=task-calendar">
+  <link rel="stylesheet" href="styles.css?v=metrics2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="app.js?v=task-calendar" defer></script>
@@ -32,21 +32,7 @@
         </div>
       </header>
 
-      <section class="metric-grid command-metric-grid goal-command-deck" aria-label="Goal summary">
-        <article class="metric-card primary command-card reactor-card goal-reactor-card">
-          <div class="metric-visual reactor-visual" data-command-ring="goalCompletion" aria-hidden="true">
-            <span class="reactor-ring outer"></span>
-            <span class="reactor-ring middle"></span>
-            <span class="reactor-core"></span>
-            <strong data-metric="goalCompletion">0%</strong>
-          </div>
-          <strong class="reactor-badge" data-metric="goalCompletion" aria-hidden="true">0%</strong>
-          <div class="metric-copy">
-            <span>Goal completion</span>
-            <strong data-metric="goalCompletion">0%</strong>
-            <div class="progress-track"><span data-bar="goalCompletion"></span></div>
-          </div>
-        </article>
+      <section class="metric-grid command-metric-grid goal-command-deck" aria-label="Goal completion summary">
         <article class="metric-card command-card checkpoint-card">
           <div class="metric-visual checkpoint-visual" aria-hidden="true">
             <span></span>
@@ -57,6 +43,59 @@
             <span>Active goals</span>
             <strong data-metric="activeGoals">0</strong>
             <p data-copy="goalAreas">Across 0 goal themes</p>
+            <p class="metric-one-liner">Total number of goals.</p>
+          </div>
+        </article>
+        <article class="metric-card primary command-card reactor-card">
+          <div class="metric-visual reactor-visual" aria-hidden="true">
+            <span class="reactor-ring outer"></span>
+            <span class="reactor-ring middle"></span>
+            <span class="reactor-core"></span>
+          </div>
+          <div class="metric-copy">
+            <span>Goals complete</span>
+            <strong data-metric="goalsCompleteFraction">0/0 (0%)</strong>
+            <p class="metric-one-liner">Goals with all tasks &amp; milestones done &divide; total goals.</p>
+          </div>
+        </article>
+        <article class="metric-card command-card tower-card">
+          <div class="metric-visual tower-visual" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div class="metric-copy">
+            <span>Milestones complete</span>
+            <strong data-metric="milestonesCompleteFraction">0/0 (0%)</strong>
+            <p class="metric-one-liner">Milestones with all tasks done &divide; total milestones.</p>
+          </div>
+        </article>
+        <article class="metric-card command-card cadence-card">
+          <div class="metric-visual cadence-visual" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div class="metric-copy">
+            <span>Tasks complete</span>
+            <strong data-metric="tasksCompleteFraction">0/0 (0%)</strong>
+            <p class="metric-one-liner">Tasks marked done &divide; total tasks.</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="metric-grid command-metric-grid goal-command-deck" aria-label="Goal deadlines and risk summary">
+        <article class="metric-card command-card beacon-card">
+          <div class="metric-visual beacon-visual" aria-hidden="true">
+            <span></span>
+            <span></span>
+          </div>
+          <div class="metric-copy">
+            <span>Tasks due soon</span>
+            <strong data-metric="goalsTasksDueSoon">0</strong>
+            <p class="metric-one-liner">Not done AND end date &le; today + 7 days.</p>
           </div>
         </article>
         <article class="metric-card command-card beacon-card">
@@ -65,22 +104,34 @@
             <span></span>
           </div>
           <div class="metric-copy">
-            <span>Due soon</span>
-            <strong data-metric="dueSoon">0</strong>
-            <p>Need attention this week</p>
+            <span>Milestones nearing deadline</span>
+            <strong data-metric="goalsMilestonesNearing">0</strong>
+            <p class="metric-one-liner">Not complete AND end date &le; today + 7 days.</p>
           </div>
         </article>
-        <article class="metric-card command-card tower-card">
-          <div class="metric-visual tower-visual" data-command-tower="stepsFinished" aria-hidden="true">
+        <article class="metric-card command-card is-alert-card">
+          <div class="metric-visual tower-visual" aria-hidden="true">
             <span></span>
             <span></span>
             <span></span>
             <span></span>
           </div>
           <div class="metric-copy">
-            <span>Tasks finished</span>
-            <strong data-metric="stepsFinished">0 / 0</strong>
-            <p>Small wins logged</p>
+            <span>Milestones missed deadline</span>
+            <strong data-metric="goalsMilestonesMissed">0</strong>
+            <p class="metric-one-liner">Not complete AND end date &lt; today.</p>
+          </div>
+        </article>
+        <article class="metric-card command-card is-alert-card">
+          <div class="metric-visual reactor-visual" aria-hidden="true">
+            <span class="reactor-ring outer"></span>
+            <span class="reactor-ring middle"></span>
+            <span class="reactor-core"></span>
+          </div>
+          <div class="metric-copy">
+            <span>Goals at risk</span>
+            <strong data-metric="goalsAtRisk">0</strong>
+            <p class="metric-one-liner">Not complete AND (&ge;1 missed milestone OR &ge;1 missed task).</p>
           </div>
         </article>
       </section>
@@ -177,7 +228,7 @@
           <form class="category-form" data-category-form>
             <label>
               Add area
-              <input name="categoryName" type="text" placeholder="Example: Faith, Fitness, Coding">
+              <input name="categoryName" type="text" placeholder="Example: Innovation, Client Relations">
             </label>
             <button class="text-button" type="submit">Add area</button>
           </form>

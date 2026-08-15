@@ -35,7 +35,7 @@ function createWindow() {
     height: 830,
     minWidth: 900,
     minHeight: 600,
-    title: 'ActionIQ - Executive Coaching Tracker',
+    title: 'ActionIQ - Executive Coaching Console',
     backgroundColor: '#02070d',
     titleBarStyle: 'hidden',
     titleBarOverlay: {

@@ -666,6 +666,34 @@ function habitStreak(habit, fromKey = todayKey()) {
   return streak;
 }
 
+const HABIT_AT_RISK_MISS_THRESHOLD = 3;
+
+function habitMissStreak(habit, fromKey = todayKey()) {
+  const hasHistory = habit.startDate || Object.keys(habit.history || {}).length;
+  if (!hasHistory) return 0;
+  const start = dateFromValue(habit.startDate);
+  let streak = 0;
+  let cursor = dateForKey(fromKey);
+  let guard = 0;
+  while (!isHabitScheduledOn(habit, dateKey(cursor)) && guard < 370) {
+    cursor = addDays(cursor, -1);
+    guard += 1;
+  }
+  while (
+    (!start || cursor >= start) &&
+    isHabitScheduledOn(habit, dateKey(cursor)) &&
+    !habitDoneOn(habit, dateKey(cursor)) &&
+    guard < 740
+  ) {
+    streak += 1;
+    do {
+      cursor = addDays(cursor, -1);
+      guard += 1;
+    } while (!isHabitScheduledOn(habit, dateKey(cursor)) && guard < 740);
+  }
+  return streak;
+}
+
 function habitDoneCheckInCount(habit) {
   return Object.entries(habit.history || {}).filter(([key, record]) => {
     return record.done && isHabitScheduledOn(habit, key);
@@ -674,6 +702,19 @@ function habitDoneCheckInCount(habit) {
 
 function habitDoneRecordCount() {
   return state.habits.reduce((sum, habit) => sum + habitDoneCheckInCount(habit), 0);
+}
+
+function habitMissedCheckInCount(habit) {
+  const start = dateFromValue(habit.startDate) || dateFromValue(Object.keys(habit.history || {}).sort()[0]);
+  if (!start) return 0;
+  const yesterday = addDays(new Date(), -1);
+  if (yesterday < start) return 0;
+  let missed = 0;
+  for (let d = new Date(start); d <= yesterday; d = addDays(d, 1)) {
+    const key = dateKey(d);
+    if (isHabitScheduledOn(habit, key) && !habitDoneOn(habit, key)) missed += 1;
+  }
+  return missed;
 }
 
 function todayMissedHabits() {
@@ -806,6 +847,64 @@ function daysLeft(deadline) {
   return Math.ceil((due - today) / 86400000);
 }
 
+function formatFraction(done, total) {
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  return `${done}/${total} (${pct}%)`;
+}
+
+function isMilestoneMissed(milestone, now = new Date()) {
+  if (isMilestoneComplete(milestone)) return false;
+  const end = dateFromValue(milestone.endDate);
+  return Boolean(end && end < now);
+}
+
+function isTaskMissed(task, now = new Date()) {
+  if (task.done) return false;
+  const end = dateFromValue(task.endDate);
+  return Boolean(end && end < now);
+}
+
+function isMilestoneNearingDeadline(milestone, now = new Date(), horizonDays = 7) {
+  if (isMilestoneComplete(milestone) || isMilestoneMissed(milestone, now)) return false;
+  const end = dateFromValue(milestone.endDate);
+  if (!end) return false;
+  return end >= now && end <= addDays(now, horizonDays);
+}
+
+function isTaskDueSoon(task, now = new Date(), horizonDays = 7) {
+  if (task.done || isTaskMissed(task, now)) return false;
+  const end = dateFromValue(task.endDate);
+  if (!end) return false;
+  return end >= now && end <= addDays(now, horizonDays);
+}
+
+function goalIsAtRisk(goal, now = new Date()) {
+  if (goalProgress(goal) === 100) return false;
+  const hasMissedMilestone = goal.milestones.some((m) => isMilestoneMissed(m, now));
+  const hasMissedTask = goalTasksFlat(goal).some((t) => isTaskMissed(t, now));
+  return hasMissedMilestone || hasMissedTask;
+}
+
+function renderGoalsPageMetrics() {
+  const goals = state.goals;
+  const milestones = goals.flatMap((goal) => goal.milestones);
+  const tasks = milestones.flatMap((milestone) => milestone.tasks);
+  const now = new Date();
+
+  const goalsComplete = goals.filter((goal) => goalProgress(goal) === 100).length;
+  const milestonesCompleteCount = milestones.filter((milestone) => isMilestoneComplete(milestone)).length;
+  const tasksCompleteCount = tasks.filter((task) => task.done).length;
+
+  setText('[data-metric="goalsCompleteFraction"]', formatFraction(goalsComplete, goals.length));
+  setText('[data-metric="milestonesCompleteFraction"]', formatFraction(milestonesCompleteCount, milestones.length));
+  setText('[data-metric="tasksCompleteFraction"]', formatFraction(tasksCompleteCount, tasks.length));
+
+  setText('[data-metric="goalsTasksDueSoon"]', tasks.filter((task) => isTaskDueSoon(task, now)).length);
+  setText('[data-metric="goalsMilestonesNearing"]', milestones.filter((milestone) => isMilestoneNearingDeadline(milestone, now)).length);
+  setText('[data-metric="goalsMilestonesMissed"]', milestones.filter((milestone) => isMilestoneMissed(milestone, now)).length);
+  setText('[data-metric="goalsAtRisk"]', goals.filter((goal) => goalIsAtRisk(goal, now)).length);
+}
+
 function totals() {
   const goalCount = state.goals.length;
   const taskCount = state.tasks.length;
@@ -933,12 +1032,8 @@ function dashboardGoalsProgress(goals) {
   if (!goals.length) return 0;
   const perGoal = goals.map((goal) => {
     if (!goal.milestones.length) return 0;
-    const perMilestone = goal.milestones.map((milestone) => {
-      if (!milestone.tasks.length) return isMilestoneComplete(milestone) ? 100 : 0;
-      const done = milestone.tasks.filter((task) => task.done).length;
-      return Math.round((done / milestone.tasks.length) * 100);
-    });
-    return Math.round(perMilestone.reduce((sum, value) => sum + value, 0) / perMilestone.length);
+    const complete = goal.milestones.filter((milestone) => isMilestoneComplete(milestone)).length;
+    return Math.round((complete / goal.milestones.length) * 100);
   });
   return Math.round(perGoal.reduce((sum, value) => sum + value, 0) / perGoal.length);
 }
@@ -1036,7 +1131,9 @@ function renderHabitScoreZone() {
     return true;
   });
   const checkInCount = filteredHabits.reduce((sum, habit) => sum + habitDoneCheckInCount(habit), 0);
+  const missedCount = filteredHabits.reduce((sum, habit) => sum + habitMissedCheckInCount(habit), 0);
   setText('[data-metric="habitScoreCount"]', checkInCount);
+  setText('[data-metric="habitScoreMissed"]', missedCount);
 }
 
 function renderDashboardLanes() {
@@ -1046,15 +1143,13 @@ function renderDashboardLanes() {
   const milestones = goals.flatMap((goal) => goal.milestones);
   const tasks = milestones.flatMap((milestone) => milestone.tasks);
 
-  const goalsAchieved = goals.filter((goal) => goalProgress(goal) === 100).length;
-  const goalsDueSoon = goals.filter((goal) => {
-    const left = daysLeft(goal.endDate);
-    return left !== null && left >= 0 && left <= 7 && goalProgress(goal) < 100;
-  }).length;
+  const now = new Date();
+  const goalsComplete = goals.filter((goal) => goalProgress(goal) === 100).length;
+  const goalsAtRisk = goals.filter((goal) => goalIsAtRisk(goal, now)).length;
 
   setText('[data-metric="dashGoalsCount"]', goals.length);
-  setText('[data-metric="dashGoalsAchieved"]', goalsAchieved);
-  setText('[data-metric="dashGoalsDueSoon"]', goalsDueSoon);
+  setText('[data-metric="dashGoalsCompleteFraction"]', formatFraction(goalsComplete, goals.length));
+  setText('[data-metric="dashGoalsAtRisk"]', goalsAtRisk);
   setText('[data-metric="dashGoalsProgress"]', `${dashboardGoalsProgress(goals)}%`);
   setBar("dashGoalsProgress", dashboardGoalsProgress(goals));
 
@@ -1062,31 +1157,39 @@ function renderDashboardLanes() {
   setBar("leadershipGrowth", leadershipGrowthProgress(goals));
 
   const milestonesComplete = milestones.filter((milestone) => isMilestoneComplete(milestone)).length;
-  const milestonesPending = milestones.length - milestonesComplete;
+  const milestonesMissed = milestones.filter((milestone) => isMilestoneMissed(milestone, now)).length;
+  const milestonesNearing = milestones.filter((milestone) => isMilestoneNearingDeadline(milestone, now)).length;
+  const milestonesOnTrack = milestones.length - milestonesComplete - milestonesMissed;
   const milestonesRate = milestones.length ? Math.round((milestonesComplete / milestones.length) * 100) : 0;
 
   setText('[data-metric="dashMilestonesCount"]', milestones.length);
-  setText('[data-metric="dashMilestonesComplete"]', milestonesComplete);
-  setText('[data-metric="dashMilestonesPending"]', milestonesPending);
-  setText('[data-metric="dashMilestonesRate"]', `${milestonesRate}%`);
+  setText('[data-metric="dashMilestonesCompleteFraction"]', formatFraction(milestonesComplete, milestones.length));
+  setText('[data-metric="dashMilestonesNearing"]', milestonesNearing);
+  setText('[data-metric="dashMilestonesOnTrack"]', milestonesOnTrack);
+  setText('[data-metric="dashMilestonesMissed"]', milestonesMissed);
   setBar("dashMilestonesRate", milestonesRate);
 
   const tasksComplete = tasks.filter((task) => task.done).length;
-  const tasksPending = tasks.length - tasksComplete;
+  const tasksMissed = tasks.filter((task) => isTaskMissed(task, now)).length;
+  const tasksDueSoon = tasks.filter((task) => isTaskDueSoon(task, now)).length;
+  const tasksOnTrack = tasks.length - tasksComplete - tasksMissed;
   const tasksRate = tasks.length ? Math.round((tasksComplete / tasks.length) * 100) : 0;
 
   setText('[data-metric="dashTasksCount"]', tasks.length);
-  setText('[data-metric="dashTasksComplete"]', tasksComplete);
-  setText('[data-metric="dashTasksPending"]', tasksPending);
-  setText('[data-metric="dashTasksRate"]', `${tasksRate}%`);
+  setText('[data-metric="dashTasksCompleteFraction"]', formatFraction(tasksComplete, tasks.length));
+  setText('[data-metric="dashTasksDueSoon"]', tasksDueSoon);
+  setText('[data-metric="dashTasksOnTrack"]', tasksOnTrack);
+  setText('[data-metric="dashTasksMissed"]', tasksMissed);
   setBar("dashTasksRate", tasksRate);
 
   const today = todayKey();
   const scheduledToday = scheduledHabitsForDate(today);
   const habitsDoneToday = scheduledToday.filter((habit) => habitDoneOn(habit, today)).length;
+  const habitsMissedToday = scheduledToday.length - habitsDoneToday;
   const bestHabit = state.habits
     .map((habit) => habitStreak(habit))
     .sort((a, b) => b - a)[0] || 0;
+  const habitsAtRisk = state.habits.filter((habit) => habitMissStreak(habit) >= HABIT_AT_RISK_MISS_THRESHOLD).length;
   const habits21DayWindow = state.habits.filter((habit) => {
     const formed = habitFormationDate(habit);
     if (!formed) return false;
@@ -1096,11 +1199,50 @@ function renderDashboardLanes() {
 
   setText('[data-metric="dashHabitsCount"]', state.habits.length);
   setText('[data-metric="dashHabitsDoneToday"]', habitsDoneToday);
+  setText('[data-metric="dashHabitsMissedToday"]', habitsMissedToday);
   setText('[data-metric="dashHabitsBestStreak"]', `${bestHabit} days`);
+  setText('[data-metric="dashHabitsAtRisk"]', habitsAtRisk);
   setText('[data-metric="dashHabits21Day"]', habits21DayWindow);
   setText("[data-summary-habits-21day-note]", state.habits.some((habit) => isDailyHabit(habit) && habit.startDate)
     ? "Daily habits within 3 days of, or past, their 21-day formation mark"
     : "No daily habits with a start date yet");
+
+  renderGoalCompletionForecast(goals, milestones, milestonesMissed, tasks, tasksMissed);
+}
+
+function renderGoalCompletionForecast(goals, milestones, milestonesMissed, tasks, tasksMissed) {
+  const zone = document.querySelector("[data-forecast-zone]");
+  if (!zone) return;
+
+  const upcomingEndDates = goals.map((goal) => dateFromValue(goal.endDate)).filter(Boolean).sort((a, b) => a - b);
+  const targetDate = upcomingEndDates[0];
+  setText('[data-metric="forecastTargetDate"]', targetDate ? formatDate(dateToValue(targetDate)) : "No target date set");
+
+  const probabilityEl = document.querySelector('[data-metric="forecastProbability"]');
+  const labelEl = document.querySelector("[data-forecast-label]");
+  const detailEl = document.querySelector("[data-forecast-detail]");
+
+  const trackedTotal = milestones.length + tasks.length;
+  const trackedMissed = milestonesMissed + tasksMissed;
+
+  if (!trackedTotal) {
+    if (probabilityEl) probabilityEl.textContent = "–";
+    if (labelEl) { labelEl.textContent = "No milestones or tasks yet"; labelEl.className = "core-score-unit forecast-label"; }
+    if (detailEl) detailEl.textContent = "Add milestones and tasks to a goal to see a completion forecast here.";
+    return;
+  }
+
+  const probability = Math.round(((trackedTotal - trackedMissed) / trackedTotal) * 100);
+  let label = "On track";
+  let labelClass = "is-on-track";
+  if (probability < 50) { label = "Off track"; labelClass = "is-off-track"; }
+  else if (probability < 80) { label = "At risk"; labelClass = "is-at-risk"; }
+
+  if (probabilityEl) probabilityEl.textContent = `${probability}%`;
+  if (labelEl) { labelEl.textContent = label; labelEl.className = `core-score-unit forecast-label ${labelClass}`; }
+  if (detailEl) {
+    detailEl.textContent = `((milestones + tasks) − missed) ÷ (milestones + tasks) = (${milestones.length} + ${tasks.length} − ${trackedMissed}) ÷ ${trackedTotal}. Missed: ${milestonesMissed} milestone(s), ${tasksMissed} task(s).`;
+  }
 }
 
 function syncDashboardSummary(data) {
@@ -1403,6 +1545,16 @@ function habitLinkHref() {
   return "habits.html";
 }
 
+function taskHabitLinkPickerMarkup(goal, task) {
+  return `
+    <select class="task-habit-link-select" data-link-habit-to-task="${goal.id}:${task.id}">
+      <option value="">Link a habit&hellip;</option>
+      ${state.habits.map((habit) => `<option value="${escapeHtml(habit.id)}">${escapeHtml(habit.name)}</option>`).join("")}
+      <option value="__add_new_habit__">+ Add new habit&hellip;</option>
+    </select>
+  `;
+}
+
 function taskLinkHref() {
   return "tasks.html";
 }
@@ -1482,7 +1634,7 @@ function goalRow(goal, index) {
     openDeleteConfirm({
       eyebrow: "Confirm delete",
       title: "Delete goal?",
-      copy: `This will delete "${goal.title}" and its milestones. Linked habits will stay in your habit tracker.`,
+      copy: `This will delete "${goal.title}" and its milestones. Linked habits will stay in your Habits list.`,
       confirmLabel: "Delete goal",
       onConfirm: () => {
         state.goals = state.goals.filter((item) => item.id !== goal.id);
@@ -1496,7 +1648,7 @@ function goalRow(goal, index) {
 function milestonesMarkup(goal) {
   return `
     <div class="milestone-list" data-milestone-list="${goal.id}">
-      ${goal.milestones.map((milestone) => milestoneMarkup(goal, milestone)).join("")}
+      ${goal.milestones.map((milestone, index) => milestoneMarkup(goal, milestone, index)).join("")}
       <form class="edit-card-form add-milestone-form" data-add-milestone-form="${goal.id}">
         <label>
           New milestone
@@ -1514,7 +1666,7 @@ function isMilestoneComplete(milestone) {
   return milestone.tasks.length > 0 && milestone.tasks.every((task) => task.done);
 }
 
-function milestoneMarkup(goal, milestone) {
+function milestoneMarkup(goal, milestone, index = 0) {
   const tasks = milestone.tasks;
   const done = tasks.filter((task) => task.done).length;
   const complete = isMilestoneComplete(milestone);
@@ -1522,12 +1674,12 @@ function milestoneMarkup(goal, milestone) {
     <div class="milestone-item ${complete ? "is-complete" : ""}" data-milestone-id="${milestone.id}">
       <div class="milestone-item-head">
         <div>
-          <strong>${escapeHtml(milestone.title)}</strong>
+          <strong>Milestone ${index + 1}: ${escapeHtml(milestone.title)}</strong>
           ${complete ? `<span class="milestone-complete-badge">Complete</span>` : ""}
           <span>${milestone.startDate ? `Start: ${formatDate(milestone.startDate)} | ` : ""}${milestone.endDate ? `End: ${formatDate(milestone.endDate)} | ` : ""}${done} / ${tasks.length} tasks done</span>
         </div>
         <div class="milestone-item-actions">
-          <button class="delete-button" type="button" data-delete-milestone="${milestone.id}">Delete</button>
+          <button class="delete-button compact-button" type="button" data-delete-milestone="${milestone.id}">Delete</button>
         </div>
       </div>
       <div class="cascade-section-label cascade-section-label-task">Tasks (${tasks.length})</div>
@@ -1548,8 +1700,8 @@ function tasksMarkup(goal, milestone) {
             <span>${escapeHtml(task.title)}</span>
           </label>
           <span class="milestone-task-dates">${task.startDate ? `Start: ${formatDate(task.startDate)} ` : ""}${task.endDate ? `End: ${formatDate(task.endDate)}` : ""}</span>
-          ${supportHabits.length ? `<span class="routine-idea-note"><span>Supporting habit</span><strong>${supportHabits.map((h) => escapeHtml(h.name)).join(", ")}</strong></span>` : `<a class="ghost-button link-button" href="${habitLinkHref()}" data-routine-habit-link>Link a habit</a>`}
-          <button class="delete-button" type="button" data-delete-task="${task.id}">Delete</button>
+          ${supportHabits.length ? `<span class="routine-idea-note"><span>Supporting habit</span><strong>${supportHabits.map((h) => escapeHtml(h.name)).join(", ")}</strong></span>` : taskHabitLinkPickerMarkup(goal, task)}
+          <button class="delete-button compact-button" type="button" data-delete-task="${task.id}">Delete</button>
         </div>
       `;
       }).join("")}
@@ -1604,6 +1756,31 @@ function bindMilestonesControls(row, goal) {
       if (!href?.startsWith("#")) return;
       event.preventDefault();
       scrollToHashSection(href, link);
+    });
+  });
+  row.querySelectorAll("[data-link-habit-to-task]").forEach((select) => {
+    select.addEventListener("change", () => {
+      const [taskGoalId, taskId] = select.dataset.linkHabitToTask.split(":");
+      const { goal: taskGoal, milestone, step } = findGoalTask(taskGoalId, taskId);
+      if (!taskGoal || !step) return;
+
+      if (select.value === "__add_new_habit__") {
+        const base = window.location.pathname.includes("/mobile/") ? "../habits.html" : "habits.html";
+        const params = new URLSearchParams();
+        params.set("linkedGoalId", taskGoal.id);
+        params.set("linkedGoal", taskGoal.title);
+        params.set("linkedTaskId", step.id);
+        params.set("linkedStep", step.title);
+        window.location.href = `${base}?${params.toString()}`;
+        return;
+      }
+
+      const habit = state.habits.find((item) => item.id === select.value);
+      if (!habit) return;
+      habit.supportedGoalId = taskGoal.id;
+      habit.supportedMilestoneId = milestone.id;
+      habit.supportedTaskId = step.id;
+      saveAndRender();
     });
   });
   row.querySelectorAll("[data-add-milestone-form]").forEach((form) => {
@@ -1701,7 +1878,7 @@ function bindGoalEditControls(row, goal) {
     openDeleteConfirm({
       eyebrow: "Confirm delete",
       title: "Delete goal?",
-      copy: `This will delete "${goal.title}" and its milestones. Linked habits will stay in your habit tracker.`,
+      copy: `This will delete "${goal.title}" and its milestones. Linked habits will stay in your Habits list.`,
       confirmLabel: "Delete goal",
       onConfirm: () => {
         state.goals = state.goals.filter((item) => item.id !== goal.id);
@@ -2948,7 +3125,7 @@ function renderAccountControls() {
     openDeleteConfirm({
       eyebrow: "Confirm logout",
       title: "Log out?",
-      copy: "You will return to the login screen. Your latest saved tracker state will stay connected to this account.",
+      copy: "You will return to the login screen. Your latest saved data will stay connected to this account.",
       confirmLabel: "Log out",
       onConfirm: async () => {
         if (supabaseClient) await supabaseClient.auth.signOut();
@@ -3630,6 +3807,7 @@ function render() {
   renderGoalSupportPickers();
   renderGoals();
   renderCategories();
+  renderGoalsPageMetrics();
   renderGoalTaskBoard();
   renderTasks();
   renderHabits();
@@ -4126,6 +4304,7 @@ async function initializeApp() {
   const linkedGoalId    = urlParams.get("linkedGoalId");
   const linkedGoalTitle = urlParams.get("linkedGoal");
   const linkedStepText  = urlParams.get("linkedStep");
+  const linkedTaskId    = urlParams.get("linkedTaskId");
   if ((linkedGoalId || linkedGoalTitle) && document.querySelector("[data-habit-form]")) {
     window.setTimeout(() => {
       const habitSection = document.querySelector("[data-habit-form]")?.closest("section, article, .panel");
@@ -4152,10 +4331,13 @@ async function initializeApp() {
           if (fuzzyOpt) goalOnlySelect.value = fuzzyOpt.value;
         }
       }
-      // If a specific step was passed, also pre-select the micro-step dropdown
-      if (linkedStepText) {
-        const stepSelect = document.querySelector("[data-goal-step-support]");
-        if (stepSelect) {
+      // If a specific task was passed, pre-select the task dropdown precisely; fall back to a fuzzy text match
+      const stepSelect = document.querySelector("[data-goal-step-support]");
+      if (stepSelect) {
+        if (linkedGoalId && linkedTaskId) {
+          const exactOpt = [...stepSelect.options].find((opt) => opt.value === `${linkedGoalId}:${linkedTaskId}`);
+          if (exactOpt) stepSelect.value = exactOpt.value;
+        } else if (linkedStepText) {
           const matchOption = [...stepSelect.options].find((opt) => opt.text.toLowerCase().includes(linkedStepText.toLowerCase()));
           if (matchOption) stepSelect.value = matchOption.value;
         }

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ActionIQ | Executive Coaching Tracker</title>
-  <link rel="stylesheet" href="styles.css?v=task-calendar">
+  <title>ActionIQ | Executive Coaching Console</title>
+  <link rel="stylesheet" href="styles.css?v=metrics2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="app.js?v=task-calendar" defer></script>
@@ -25,7 +25,7 @@
       <section class="scroll-section home-section" id="home">
         <div class="home-hero">
           <div class="home-copy">
-            <p class="eyebrow">Executive coaching tracker</p>
+            <p class="eyebrow">Executive coaching console</p>
             <h1>ActionIQ</h1>
             <p class="app-tagline">Maximise your Leadership Potential</p>
             <p class="home-brief">
@@ -52,13 +52,47 @@
             <div class="hud-chip chip-habits">Habits</div>
           </div>
         </div>
+
+        <article class="panel command-panel structure-guide-panel" aria-label="How ActionIQ is structured">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">How it fits together</p>
+              <h2>From goal statement to daily action</h2>
+            </div>
+          </div>
+          <div class="structure-guide">
+            <div class="structure-chain">
+              <div class="structure-node node-goal">
+                <span class="structure-node-label">Goal</span>
+                <p>One sharp statement of the outcome you're coaching toward, with a theme, dates, and a measure of success.</p>
+              </div>
+              <span class="structure-arrow" aria-hidden="true">&rarr;</span>
+              <div class="structure-node node-milestone">
+                <span class="structure-node-label">Milestones</span>
+                <p>The major checkpoints a goal breaks down into, each with its own start and end date.</p>
+              </div>
+              <span class="structure-arrow" aria-hidden="true">&rarr;</span>
+              <div class="structure-node node-task">
+                <span class="structure-node-label">Tasks</span>
+                <p>The specific actions that complete a milestone. A goal is achieved one task at a time.</p>
+              </div>
+            </div>
+            <div class="structure-branch">
+              <span class="structure-branch-connector" aria-hidden="true"></span>
+              <div class="structure-node node-habit">
+                <span class="structure-node-label">Habits</span>
+                <p>Can stand alone, or link to a Goal statement, a Milestone, or a specific Task &mdash; whichever level you want to reinforce with a recurring routine.</p>
+              </div>
+            </div>
+          </div>
+        </article>
       </section>
 
       <section class="scroll-section" id="dashboard">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Executive coaching tracker</p>
-            <h1>Build the week you actually want.</h1>
+            <p class="eyebrow">Executive coaching console</p>
+            <h1>Monitor and take control of your progress.</h1>
           </div>
           <div class="top-actions" style="display: flex; gap: 10px; align-items: center;">
             <div class="today-readout" data-today-readout></div>
@@ -105,7 +139,7 @@
                   <h2 data-metric="leadershipGrowth">0%</h2>
                   <div class="progress-track"><span data-bar="leadershipGrowth"></span></div>
                 </div>
-                <p class="core-score-note">Average of goals fully completed and milestones completed across your goals.</p>
+                <p class="core-score-note">Average of two ratios: (goals fully completed &divide; total goals) and (milestones completed &divide; total milestones).</p>
               </div>
             </div>
 
@@ -114,9 +148,9 @@
                 <p class="eyebrow">Habit Score</p>
                 <div class="core-score-readout">
                   <h2 data-metric="habitScoreCount">0</h2>
-                  <span class="core-score-unit">check-ins complete</span>
+                  <span class="core-score-unit">complete</span>
                 </div>
-                <p class="core-score-note">Total daily check-ins marked complete, across the habits selected below.</p>
+                <p class="core-score-note">Sum of check-ins marked done (and <strong data-metric="habitScoreMissed">0</strong> missed), across the habits/theme selected below.</p>
                 <div class="habit-score-filters">
                   <label>
                     By habit
@@ -131,6 +165,18 @@
                     </select>
                   </label>
                 </div>
+              </div>
+            </div>
+
+            <div class="summary-core-zone forecast-zone" data-forecast-zone>
+              <div class="summary-core-copy">
+                <p class="eyebrow">Goal Completion Forecast</p>
+                <div class="core-score-readout">
+                  <h2 data-metric="forecastProbability">&ndash;</h2>
+                  <span class="core-score-unit forecast-label" data-forecast-label>No milestones yet</span>
+                </div>
+                <p class="core-score-note">Target completion date: <strong data-metric="forecastTargetDate">No target date set</strong></p>
+                <p class="core-score-note" data-forecast-detail>((milestones + tasks) &minus; missed) &divide; (milestones + tasks)</p>
               </div>
             </div>
           </div>
@@ -179,14 +225,26 @@
                   <a class="text-button link-button compact-button" href="goals.html" data-dashboard-section-link>Go to goals</a>
                 </div>
                 <div class="summary-cell-grid">
-                  <div class="summary-cell"><span>Goals</span><strong data-metric="dashGoalsCount">0</strong></div>
-                  <div class="summary-cell"><span>Achieved</span><strong data-metric="dashGoalsAchieved">0</strong></div>
-                  <div class="summary-cell"><span>Due soon</span><strong data-metric="dashGoalsDueSoon">0</strong></div>
+                  <div class="summary-cell">
+                    <span>Goals</span>
+                    <strong data-metric="dashGoalsCount">0</strong>
+                    <small class="lane-metric-note">Total number of goals</small>
+                  </div>
+                  <div class="summary-cell">
+                    <span>Goals complete</span>
+                    <strong data-metric="dashGoalsCompleteFraction">0/0 (0%)</strong>
+                    <small class="lane-metric-note">Goals with all tasks &amp; milestones done &divide; total goals</small>
+                  </div>
+                  <div class="summary-cell is-alert-cell">
+                    <span>Goals at risk</span>
+                    <strong data-metric="dashGoalsAtRisk">0</strong>
+                    <small class="lane-metric-note">Goals: not complete AND (&ge;1 missed milestone OR &ge;1 missed task)</small>
+                  </div>
                   <div class="summary-cell wide-cell">
                     <span>Goal progress</span>
                     <strong data-metric="dashGoalsProgress">0%</strong>
                     <div class="progress-track"><span data-bar="dashGoalsProgress"></span></div>
-                    <small class="lane-metric-note">Average, per goal, of that goal's milestone completion %</small>
+                    <small class="lane-metric-note">Average, per goal, of (milestones complete &divide; total milestones)</small>
                   </div>
                 </div>
               </div>
@@ -209,14 +267,31 @@
                   <a class="text-button link-button compact-button" href="goals.html" data-dashboard-section-link>Go to goals</a>
                 </div>
                 <div class="summary-cell-grid">
-                  <div class="summary-cell"><span>Milestones</span><strong data-metric="dashMilestonesCount">0</strong></div>
-                  <div class="summary-cell"><span>Complete</span><strong data-metric="dashMilestonesComplete">0</strong></div>
-                  <div class="summary-cell"><span>Pending</span><strong data-metric="dashMilestonesPending">0</strong></div>
+                  <div class="summary-cell">
+                    <span>Milestones</span>
+                    <strong data-metric="dashMilestonesCount">0</strong>
+                    <small class="lane-metric-note">Total number of milestones</small>
+                  </div>
+                  <div class="summary-cell">
+                    <span>Complete</span>
+                    <strong data-metric="dashMilestonesCompleteFraction">0/0 (0%)</strong>
+                    <small class="lane-metric-note">Milestones with all tasks done &divide; total milestones</small>
+                  </div>
+                  <div class="summary-cell">
+                    <span>Nearing deadline</span>
+                    <strong data-metric="dashMilestonesNearing">0</strong>
+                    <small class="lane-metric-note">Not complete AND end date &le; today + 7 days</small>
+                  </div>
+                  <div class="summary-cell is-alert-cell">
+                    <span>Missed deadline</span>
+                    <strong data-metric="dashMilestonesMissed">0</strong>
+                    <small class="lane-metric-note">Not complete AND end date &lt; today</small>
+                  </div>
                   <div class="summary-cell wide-cell">
-                    <span>Completion rate</span>
-                    <strong data-metric="dashMilestonesRate">0%</strong>
+                    <span>On track</span>
+                    <strong data-metric="dashMilestonesOnTrack">0</strong>
                     <div class="progress-track"><span data-bar="dashMilestonesRate"></span></div>
-                    <small class="lane-metric-note">Milestones complete &divide; total milestones (a milestone completes when all its tasks are done)</small>
+                    <small class="lane-metric-note">Total &minus; complete &minus; missed</small>
                   </div>
                 </div>
               </div>
@@ -238,14 +313,31 @@
                   <a class="text-button link-button compact-button" href="tasks.html" data-dashboard-section-link>Go to tasks</a>
                 </div>
                 <div class="summary-cell-grid">
-                  <div class="summary-cell"><span>Tasks</span><strong data-metric="dashTasksCount">0</strong></div>
-                  <div class="summary-cell"><span>Complete</span><strong data-metric="dashTasksComplete">0</strong></div>
-                  <div class="summary-cell"><span>Pending</span><strong data-metric="dashTasksPending">0</strong></div>
+                  <div class="summary-cell">
+                    <span>Tasks</span>
+                    <strong data-metric="dashTasksCount">0</strong>
+                    <small class="lane-metric-note">Total number of tasks</small>
+                  </div>
+                  <div class="summary-cell">
+                    <span>Complete</span>
+                    <strong data-metric="dashTasksCompleteFraction">0/0 (0%)</strong>
+                    <small class="lane-metric-note">Tasks marked done &divide; total tasks</small>
+                  </div>
+                  <div class="summary-cell">
+                    <span>Due soon</span>
+                    <strong data-metric="dashTasksDueSoon">0</strong>
+                    <small class="lane-metric-note">Not done AND end date &le; today + 7 days</small>
+                  </div>
+                  <div class="summary-cell is-alert-cell">
+                    <span>Missed deadline</span>
+                    <strong data-metric="dashTasksMissed">0</strong>
+                    <small class="lane-metric-note">Not done AND end date &lt; today</small>
+                  </div>
                   <div class="summary-cell wide-cell">
-                    <span>Completion rate</span>
-                    <strong data-metric="dashTasksRate">0%</strong>
+                    <span>On track</span>
+                    <strong data-metric="dashTasksOnTrack">0</strong>
                     <div class="progress-track"><span data-bar="dashTasksRate"></span></div>
-                    <small class="lane-metric-note">Tasks marked done &divide; total tasks across all milestones</small>
+                    <small class="lane-metric-note">Total &minus; complete &minus; missed</small>
                   </div>
                 </div>
               </div>
@@ -271,9 +363,31 @@
                   <a class="text-button link-button compact-button" href="habits.html" data-dashboard-section-link>Go to habits</a>
                 </div>
                 <div class="summary-cell-grid">
-                  <div class="summary-cell"><span>Habits</span><strong data-metric="dashHabitsCount">0</strong></div>
-                  <div class="summary-cell"><span>Done today</span><strong data-metric="dashHabitsDoneToday">0</strong></div>
-                  <div class="summary-cell"><span>Best streak</span><strong data-metric="dashHabitsBestStreak">0 days</strong></div>
+                  <div class="summary-cell">
+                    <span>Habits</span>
+                    <strong data-metric="dashHabitsCount">0</strong>
+                    <small class="lane-metric-note">Total number of habits</small>
+                  </div>
+                  <div class="summary-cell">
+                    <span>Done today</span>
+                    <strong data-metric="dashHabitsDoneToday">0</strong>
+                    <small class="lane-metric-note">Scheduled today AND checked off</small>
+                  </div>
+                  <div class="summary-cell is-alert-cell">
+                    <span>Missed today</span>
+                    <strong data-metric="dashHabitsMissedToday">0</strong>
+                    <small class="lane-metric-note">Scheduled today AND not checked off</small>
+                  </div>
+                  <div class="summary-cell">
+                    <span>Best streak</span>
+                    <strong data-metric="dashHabitsBestStreak">0 days</strong>
+                    <small class="lane-metric-note">Max, across habits, of consecutive scheduled days checked off ending today</small>
+                  </div>
+                  <div class="summary-cell is-alert-cell">
+                    <span>Habits at risk</span>
+                    <strong data-metric="dashHabitsAtRisk">0</strong>
+                    <small class="lane-metric-note">Habits with &ge;3 consecutive missed scheduled days</small>
+                  </div>
                   <div class="summary-cell wide-cell">
                     <span>Near or past 21-day formation</span>
                     <strong data-metric="dashHabits21Day">0</strong>

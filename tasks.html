@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tasks | ActionIQ</title>
-  <link rel="stylesheet" href="styles.css?v=task-calendar">
+  <link rel="stylesheet" href="styles.css?v=metrics2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="app.js?v=task-calendar" defer></script>
@@ -116,11 +116,11 @@
               <h2>One-off tasks (not tied to a goal)</h2>
             </div>
           </div>
-          <p class="form-guidance">Use this for loose ends that don't belong to a goal's milestones &mdash; errands, admin, anything one-off. Deadlines decide where linked tasks appear.</p>
+          <p class="form-guidance">Use this for loose ends that don't belong to a goal's milestones &mdash; admin, approvals, anything one-off. Deadlines decide where linked tasks appear.</p>
           <form class="entry-form task-entry-form" data-task-form>
             <label>
               Task title
-              <input name="title" type="text" placeholder="Example: Physics homework" required>
+              <input name="title" type="text" placeholder="Example: Prepare Q3 board deck" required>
             </label>
             <div class="form-field date-field deadline-date-field" data-date-field data-required-date>
               <label for="task-deadline-full">Deadline</label>
@@ -152,7 +152,7 @@
             </label>
             <label class="full-width">
               Optional details
-              <textarea name="subtext" rows="3" placeholder="Example: Finish worksheet 4 and revise forces."></textarea>
+              <textarea name="subtext" rows="3" placeholder="Example: Circulate agenda and confirm attendees."></textarea>
             </label>
             <button class="text-button" type="submit">Save task</button>
           </form>
