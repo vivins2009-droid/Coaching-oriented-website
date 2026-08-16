@@ -9164,7 +9164,8 @@ small.lane-metric-note {
   border-color: rgba(255, 111, 97, 0.35);
 }
 
-.goal-command-deck .metric-copy strong {
+.goal-command-deck .metric-copy strong,
+.habit-command-deck .metric-copy strong {
   font-size: clamp(1.3rem, 1.8vw, 1.8rem);
   margin: 8px 0 4px;
 }
@@ -9205,6 +9206,21 @@ small.lane-metric-note {
 .date-popover {
   max-height: min(360px, calc(100vh - 40px));
   overflow-y: auto;
+  z-index: 99999;
+  /* Override the base rule's right:0 anchoring and 3D depth transform:
+     on wide/full-width trigger buttons, right:0 pushed the calendar far
+     from the visible label text, and translateZ under this app's nested
+     3D perspective ancestors caused visual compositing artifacts that
+     made the calendar look "underlaid" by page content behind it. */
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  background-color: #020e17;
+  opacity: 1;
+}
+
+.date-field.is-open {
+  z-index: 99999;
 }
 
 .date-field.opens-upward .date-popover {
@@ -9262,6 +9278,141 @@ small.lane-metric-note {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   vertical-align: middle;
+}
+
+.reflection-status-badge.is-missed {
+  background: rgba(255, 111, 97, 0.18);
+  border-color: rgba(255, 111, 97, 0.5);
+  color: #ff8f6b;
+}
+
+.reflection-status-badge.is-on-track {
+  background: rgba(0, 246, 255, 0.14);
+  border-color: rgba(0, 246, 255, 0.4);
+  color: #00f6ff;
+}
+
+.reflection-guidance-spaced {
+  margin-top: 18px;
+}
+
+.reflection-goal-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 480px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.reflection-goal-label select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line, rgba(0, 246, 255, 0.25));
+  border-radius: 10px;
+  background: rgba(0, 246, 255, 0.06);
+  color: var(--text, #e9fdff);
+  font: inherit;
+  font-weight: 500;
+}
+
+.reflection-goal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.reflection-goal-why {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.reflection-milestone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.reflection-milestone-item {
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 246, 255, 0.15);
+  border-radius: 12px;
+  background: rgba(0, 246, 255, 0.04);
+}
+
+.reflection-milestone-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reflection-milestone-sub {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.reflection-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(167, 139, 250, 0.25);
+}
+
+.reflection-task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.84rem;
+}
+
+.reflection-empty-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.reflection-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.reflection-history-item {
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 246, 255, 0.15);
+  border-radius: 12px;
+  background: rgba(0, 246, 255, 0.03);
+}
+
+.reflection-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.reflection-history-item p {
+  margin: 0;
+  color: var(--text, #e9fdff);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
 }
 
 .milestone-item-head {

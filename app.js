@@ -164,7 +164,17 @@ function showPaywallModal(options = {}) {
 }
 
 function createEmptyState() {
-  return { goals: [], habits: [], tasks: [], categories: [...DEFAULT_CATEGORIES] };
+  return { goals: [], habits: [], tasks: [], reflections: [], categories: [...DEFAULT_CATEGORIES] };
+}
+
+function normalizeReflection(reflection) {
+  return {
+    id: reflection?.id || uid("reflection"),
+    goalId: String(reflection?.goalId || ""),
+    date: String(reflection?.date || ""),
+    text: String(reflection?.text || "").trim(),
+    updatedAt: String(reflection?.updatedAt || new Date().toISOString())
+  };
 }
 
 function normalizeStateSnapshot(raw) {
@@ -173,6 +183,7 @@ function normalizeStateSnapshot(raw) {
     goals: Array.isArray(raw?.goals) ? raw.goals.map(normalizeGoal) : [],
     habits: Array.isArray(raw?.habits) ? raw.habits.map(normalizeHabit) : [],
     tasks: Array.isArray(raw?.tasks) ? raw.tasks.map(normalizeTask) : [],
+    reflections: Array.isArray(raw?.reflections) ? raw.reflections.map(normalizeReflection).filter((r) => r.goalId && r.date) : [],
     categories: storedHasCategories ? normalizeCategories(raw.categories, { allowEmpty: true }) : [...DEFAULT_CATEGORIES]
   };
 }
@@ -182,6 +193,7 @@ function currentStatePayload() {
     goals: state.goals,
     habits: state.habits,
     tasks: state.tasks,
+    reflections: state.reflections,
     categories: state.categories
   };
 }
@@ -191,6 +203,7 @@ function applyState(nextState) {
   state.goals = normalized.goals;
   state.habits = normalized.habits;
   state.tasks = normalized.tasks;
+  state.reflections = normalized.reflections;
   state.categories = normalized.categories;
 }
 
@@ -200,6 +213,7 @@ function stateHasUserData(snapshot) {
     normalized.goals.length ||
     normalized.habits.length ||
     normalized.tasks.length ||
+    normalized.reflections.length ||
     Object.prototype.hasOwnProperty.call(snapshot || {}, "categories")
   );
 }
@@ -905,6 +919,282 @@ function renderGoalsPageMetrics() {
   setText('[data-metric="goalsAtRisk"]', goals.filter((goal) => goalIsAtRisk(goal, now)).length);
 }
 
+let selectedReflectionGoalId = "";
+
+function reflectionsForGoal(goalId) {
+  return state.reflections
+    .filter((reflection) => reflection.goalId === goalId)
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+function findReflection(goalId, dateKey) {
+  return state.reflections.find((reflection) => reflection.goalId === goalId && reflection.date === dateKey);
+}
+
+function upsertReflection(goalId, dateKey, text) {
+  const trimmed = String(text || "").trim();
+  const existing = findReflection(goalId, dateKey);
+  if (existing) {
+    existing.text = trimmed;
+    existing.updatedAt = new Date().toISOString();
+    return existing;
+  }
+  if (!trimmed) return null;
+  const created = normalizeReflection({ goalId, date: dateKey, text: trimmed });
+  state.reflections.push(created);
+  return created;
+}
+
+function milestoneStatusLabel(milestone, now = new Date()) {
+  if (isMilestoneComplete(milestone)) return { text: "Complete", cls: "is-complete" };
+  if (isMilestoneMissed(milestone, now)) return { text: "Missed deadline", cls: "is-missed" };
+  return { text: "On track", cls: "is-on-track" };
+}
+
+function reflectionGoalOverviewMarkup(goal) {
+  const now = new Date();
+  const progress = goalProgress(goal);
+  return `
+    <div class="reflection-goal-meta">
+      <span class="goal-task-chip goal-task-chip--goal">${escapeHtml(goal.category)}</span>
+      ${goal.startDate ? `<span>Start: ${formatDate(goal.startDate)}</span>` : ""}
+      ${goal.endDate ? `<span>Target: ${formatDate(goal.endDate)}</span>` : ""}
+      <span>Goal completion: ${progress}%</span>
+    </div>
+    ${goal.why ? `<p class="reflection-goal-why"><strong>Why:</strong> ${escapeHtml(goal.why)}</p>` : ""}
+    ${goal.measure ? `<p class="reflection-goal-why"><strong>Measure of success:</strong> ${escapeHtml(goal.measure)}</p>` : ""}
+    <div class="reflection-milestone-list">
+      ${goal.milestones.length ? goal.milestones.map((milestone, index) => {
+        const status = milestoneStatusLabel(milestone, now);
+        const done = milestone.tasks.filter((task) => task.done).length;
+        return `
+          <div class="reflection-milestone-item">
+            <div class="reflection-milestone-head">
+              <strong>Milestone ${index + 1}: ${escapeHtml(milestone.title)}</strong>
+              <span class="milestone-complete-badge reflection-status-badge ${status.cls}">${status.text}</span>
+            </div>
+            <span class="reflection-milestone-sub">${done} / ${milestone.tasks.length} tasks done${milestone.endDate ? ` &middot; End: ${formatDate(milestone.endDate)}` : ""}</span>
+            <div class="reflection-task-list">
+              ${milestone.tasks.map((task) => {
+                const taskStatus = task.done ? { text: "Done", cls: "is-complete" } : isTaskMissed(task, now) ? { text: "Missed", cls: "is-missed" } : { text: "Pending", cls: "is-on-track" };
+                return `
+                  <div class="reflection-task-item">
+                    <span>${escapeHtml(task.title)}</span>
+                    <span class="milestone-complete-badge reflection-status-badge ${taskStatus.cls}">${taskStatus.text}</span>
+                  </div>
+                `;
+              }).join("") || `<p class="reflection-empty-note">No tasks under this milestone yet.</p>`}
+            </div>
+          </div>
+        `;
+      }).join("") : `<p class="reflection-empty-note">No milestones under this goal yet.</p>`}
+    </div>
+  `;
+}
+
+function reflectionHistoryMarkup(goalId) {
+  const entries = reflectionsForGoal(goalId);
+  if (!entries.length) return "";
+  return entries.map((entry) => `
+    <div class="reflection-history-item" data-reflection-entry-id="${entry.id}">
+      <div class="reflection-history-head">
+        <strong>${formatDate(entry.date)}</strong>
+        <button class="ghost-button compact-button" type="button" data-edit-reflection="${entry.id}">Edit</button>
+      </div>
+      <p>${escapeHtml(entry.text)}</p>
+    </div>
+  `).join("");
+}
+
+function allGoalsReflectionHistoryMarkup() {
+  const entries = [...state.reflections].sort((a, b) => b.date.localeCompare(a.date));
+  if (!entries.length) return "";
+  return entries.map((entry) => {
+    const goal = state.goals.find((item) => item.id === entry.goalId);
+    return `
+      <div class="reflection-history-item" data-reflection-entry-id="${entry.id}">
+        <div class="reflection-history-head">
+          <strong>${formatDate(entry.date)}</strong>
+          <span class="goal-task-chip goal-task-chip--goal">${escapeHtml(goal?.title || "(deleted goal)")}</span>
+        </div>
+        <p>${escapeHtml(entry.text)}</p>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderReflectionsPage() {
+  const goalSelect = document.querySelector("[data-reflection-goal-select]");
+  if (!goalSelect) return;
+  bindReflectionExport();
+
+  const optionsKey = state.goals.map((goal) => goal.id).join(",");
+  if (goalSelect.dataset.optionsKey !== optionsKey) {
+    goalSelect.innerHTML = `<option value="">All goals</option>${state.goals.map((goal) => `<option value="${escapeHtml(goal.id)}">${escapeHtml(goal.title)}</option>`).join("")}`;
+    goalSelect.dataset.optionsKey = optionsKey;
+    if (selectedReflectionGoalId && !state.goals.some((goal) => goal.id === selectedReflectionGoalId)) {
+      selectedReflectionGoalId = "";
+    }
+  }
+  goalSelect.value = selectedReflectionGoalId;
+
+  if (!goalSelect.dataset.bound) {
+    goalSelect.dataset.bound = "true";
+    goalSelect.addEventListener("change", () => {
+      selectedReflectionGoalId = goalSelect.value;
+      const dateInput = document.querySelector('[data-reflection-form] [data-date-input]');
+      if (dateInput) dateInput.dataset.loadedFor = "";
+      render();
+    });
+  }
+
+  const overviewPanel = document.querySelector("[data-reflection-overview]");
+  const entryPanel = document.querySelector("[data-reflection-entry]");
+  const historyPanel = document.querySelector("[data-reflection-history-panel]");
+  const goal = state.goals.find((item) => item.id === selectedReflectionGoalId);
+
+  if (overviewPanel) overviewPanel.hidden = !goal;
+  if (entryPanel) entryPanel.hidden = !goal;
+
+  if (!goal) {
+    if (historyPanel) historyPanel.hidden = state.reflections.length === 0;
+    const historyList = document.querySelector("[data-reflection-history]");
+    if (historyList) historyList.innerHTML = allGoalsReflectionHistoryMarkup();
+    toggleEmpty("reflections", state.reflections.length === 0);
+    return;
+  }
+
+  if (historyPanel) historyPanel.hidden = false;
+  setText("[data-reflection-goal-title]", goal.title);
+  const overviewBody = document.querySelector("[data-reflection-overview-body]");
+  if (overviewBody) overviewBody.innerHTML = reflectionGoalOverviewMarkup(goal);
+
+  const historyList = document.querySelector("[data-reflection-history]");
+  if (historyList) {
+    const markup = reflectionHistoryMarkup(goal.id);
+    historyList.innerHTML = markup;
+    historyList.querySelectorAll("[data-edit-reflection]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const entry = state.reflections.find((item) => item.id === button.dataset.editReflection);
+        if (!entry) return;
+        const dateField = document.querySelector('[data-reflection-form] [data-date-field]');
+        const dateInput = dateField?.querySelector("[data-date-input]");
+        const textarea = document.querySelector("[data-reflection-textarea]");
+        if (dateInput) { dateInput.value = entry.date; dateInput.dataset.loadedFor = `${goal.id}:${entry.date}`; }
+        if (textarea) textarea.value = entry.text;
+        syncDateHints();
+        textarea?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
+  }
+  toggleEmpty("reflections", reflectionsForGoal(goal.id).length === 0);
+
+  refreshReflectionDateEntry();
+}
+
+function refreshReflectionDateEntry() {
+  const dateInput = document.querySelector('[data-reflection-form] [data-date-input]');
+  const textarea = document.querySelector("[data-reflection-textarea]");
+  if (!dateInput || !textarea) return;
+  const dateVal = dateInput.value;
+  const loadKey = `${selectedReflectionGoalId}:${dateVal}`;
+  if (dateInput.dataset.loadedFor === loadKey) return;
+  const existing = selectedReflectionGoalId && dateVal ? findReflection(selectedReflectionGoalId, dateVal) : null;
+  textarea.value = existing ? existing.text : "";
+  dateInput.dataset.loadedFor = loadKey;
+}
+
+function bindReflectionExport() {
+  const button = document.querySelector("[data-export-reflections]");
+  if (!button || button.dataset.bound) return;
+  button.dataset.bound = "true";
+  button.addEventListener("click", exportReflectionsToExcel);
+}
+
+function exportReflectionsToExcel() {
+  if (typeof XLSX === "undefined") {
+    alert("Export library failed to load. Check your internet connection and try again.");
+    return;
+  }
+  const exportedAt = new Date();
+  const coachee = authDisplayName();
+  const scopeGoal = state.goals.find((g) => g.id === selectedReflectionGoalId) || null;
+  const scopedGoals = scopeGoal ? [scopeGoal] : state.goals;
+  const scopeLabel = scopeGoal ? scopeGoal.title : "All goals";
+
+  const reflectionRows = [
+    ["ActionIQ - Reflection Log Export"],
+    [`Coachee: ${coachee}`],
+    [`Exported: ${exportedAt.toLocaleString()}`],
+    [`Scope: ${scopeLabel}`],
+    [],
+    ["Goal statement", "Goal theme", "Reflection date", "Reflection text", "Last updated"]
+  ];
+
+  const scopedGoalIds = new Set(scopedGoals.map((g) => g.id));
+  const sortedReflections = state.reflections
+    .filter((entry) => scopedGoalIds.has(entry.goalId))
+    .sort((a, b) => {
+      const goalA = state.goals.find((g) => g.id === a.goalId)?.title || "";
+      const goalB = state.goals.find((g) => g.id === b.goalId)?.title || "";
+      return goalA.localeCompare(goalB) || a.date.localeCompare(b.date);
+    });
+
+  sortedReflections.forEach((entry) => {
+    const goal = state.goals.find((g) => g.id === entry.goalId);
+    reflectionRows.push([
+      goal?.title || "(deleted goal)",
+      goal?.category || "",
+      formatDate(entry.date),
+      entry.text,
+      entry.updatedAt ? new Date(entry.updatedAt).toLocaleString() : ""
+    ]);
+  });
+
+  const now = new Date();
+  const snapshotRows = [
+    ["ActionIQ - Goals, Milestones & Tasks Snapshot"],
+    [`Coachee: ${coachee}`],
+    [`Exported: ${exportedAt.toLocaleString()}`],
+    [`Scope: ${scopeLabel}`],
+    [],
+    ["Goal statement", "Goal theme", "Goal completion %", "Milestone", "Milestone status", "Milestone end date", "Task", "Task status", "Task end date"]
+  ];
+
+  scopedGoals.forEach((goal) => {
+    const goalCompletion = `${goalProgress(goal)}%`;
+    if (!goal.milestones.length) {
+      snapshotRows.push([goal.title, goal.category, goalCompletion, "", "", "", "", "", ""]);
+      return;
+    }
+    goal.milestones.forEach((milestone) => {
+      const milestoneStatus = milestoneStatusLabel(milestone, now).text;
+      const milestoneEnd = milestone.endDate ? formatDate(milestone.endDate) : "";
+      if (!milestone.tasks.length) {
+        snapshotRows.push([goal.title, goal.category, goalCompletion, milestone.title, milestoneStatus, milestoneEnd, "", "", ""]);
+        return;
+      }
+      milestone.tasks.forEach((task) => {
+        const taskStatus = task.done ? "Done" : isTaskMissed(task, now) ? "Missed" : "Pending";
+        const taskEnd = task.endDate ? formatDate(task.endDate) : "";
+        snapshotRows.push([goal.title, goal.category, goalCompletion, milestone.title, milestoneStatus, milestoneEnd, task.title, taskStatus, taskEnd]);
+      });
+    });
+  });
+
+  const reflectionSheet = XLSX.utils.aoa_to_sheet(reflectionRows);
+  reflectionSheet["!cols"] = [{ wch: 32 }, { wch: 22 }, { wch: 16 }, { wch: 60 }, { wch: 20 }];
+
+  const snapshotSheet = XLSX.utils.aoa_to_sheet(snapshotRows);
+  snapshotSheet["!cols"] = [{ wch: 32 }, { wch: 22 }, { wch: 16 }, { wch: 28 }, { wch: 16 }, { wch: 16 }, { wch: 32 }, { wch: 12 }, { wch: 16 }];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, reflectionSheet, "Reflections");
+  XLSX.utils.book_append_sheet(workbook, snapshotSheet, "Goals Snapshot");
+  const fileDate = dateToValue(exportedAt);
+  XLSX.writeFile(workbook, `ActionIQ-Reflections-${coachee.replace(/[^a-z0-9]+/gi, "-")}-${fileDate}.xlsx`);
+}
+
 function totals() {
   const goalCount = state.goals.length;
   const taskCount = state.tasks.length;
@@ -925,9 +1215,7 @@ function totals() {
   const missedToday = Math.max(0, plannedChecks - checksDone);
   const totalHabitCompletions = habitDoneRecordCount();
   const habitScore = plannedChecks ? Math.round((checksDone / plannedChecks) * 100) : 0;
-  const overallProgress = goalCount || plannedChecks
-    ? Math.round((averageGoalProgress + habitScore) / ((goalCount ? 1 : 0) + (plannedChecks ? 1 : 0)))
-    : 0;
+  const overallProgress = leadershipGrowthProgress(state.goals);
   const dueSoon = state.goals.filter((goal) => {
     const left = daysLeft(goal.deadline);
     return left !== null && left >= 0 && left <= 7 && goalProgress(goal) < 100;
@@ -1046,6 +1334,9 @@ function renderDashboardFilters() {
   if (!themeSelect || !titleSelect || !startMonthSelect || !endMonthSelect) return;
 
   const themes = [...new Set(state.goals.map((goal) => goal.category))].sort();
+  const goalsForTitleOptions = dashboardFilters.theme
+    ? state.goals.filter((goal) => goal.category === dashboardFilters.theme)
+    : state.goals;
   const startMonths = [...new Set(state.goals.map((goal) => monthValue(goal.startDate)).filter(Boolean))].sort();
   const endMonths = [...new Set(state.goals.map((goal) => monthValue(goal.endDate)).filter(Boolean))].sort();
 
@@ -1053,9 +1344,13 @@ function renderDashboardFilters() {
     themeSelect.innerHTML = `<option value="">All themes</option>${themes.map((theme) => `<option value="${escapeHtml(theme)}">${escapeHtml(theme)}</option>`).join("")}`;
     themeSelect.dataset.optionsCount = String(themes.length);
   }
-  if (titleSelect.dataset.optionsCount !== String(state.goals.length)) {
-    titleSelect.innerHTML = `<option value="">All goals</option>${state.goals.map((goal) => `<option value="${escapeHtml(goal.id)}">${escapeHtml(goal.title)}</option>`).join("")}`;
-    titleSelect.dataset.optionsCount = String(state.goals.length);
+  const titleOptionsKey = `${dashboardFilters.theme}:${goalsForTitleOptions.map((goal) => goal.id).join(",")}`;
+  if (titleSelect.dataset.optionsKey !== titleOptionsKey) {
+    titleSelect.innerHTML = `<option value="">All goals</option>${goalsForTitleOptions.map((goal) => `<option value="${escapeHtml(goal.id)}">${escapeHtml(goal.title)}</option>`).join("")}`;
+    titleSelect.dataset.optionsKey = titleOptionsKey;
+    if (dashboardFilters.title && !goalsForTitleOptions.some((goal) => goal.id === dashboardFilters.title)) {
+      dashboardFilters.title = "";
+    }
   }
   if (startMonthSelect.dataset.optionsCount !== String(startMonths.length)) {
     startMonthSelect.innerHTML = `<option value="">Any start month</option>${startMonths.map((month) => `<option value="${escapeHtml(month)}">${escapeHtml(monthLabel(month))}</option>`).join("")}`;
@@ -1272,7 +1567,8 @@ function goalSummaryNote(goal) {
 }
 
 function findRecoveryHabit() {
-  return todayMissedHabits()[0]?.name || "None";
+  const missed = todayMissedHabits();
+  return missed.length ? missed.map((habit) => habit.name).join(", ") : "None";
 }
 
 function reflectionEditKey(habitId, key) {
@@ -3321,10 +3617,12 @@ function openDateCalendar(field) {
 
   const triggerRect = trigger.getBoundingClientRect();
   const estimatedHeight = 360;
-  const opensUpward = triggerRect.bottom + estimatedHeight > window.innerHeight && triggerRect.top > estimatedHeight;
+  const spaceBelow = window.innerHeight - triggerRect.bottom;
+  const spaceAbove = triggerRect.top;
+  const opensUpward = spaceBelow < estimatedHeight && spaceAbove > spaceBelow;
   field.classList.toggle("opens-upward", opensUpward);
   window.requestAnimationFrame(() => {
-    trigger.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    trigger.scrollIntoView({ block: "center", behavior: "smooth" });
   });
 }
 
@@ -3336,6 +3634,7 @@ function syncDateHints() {
     field.classList.toggle("has-date", Boolean(input?.value));
   });
   updateHabitFormationHints();
+  refreshReflectionDateEntry();
 }
 
 function updateHabitFormationHints() {
@@ -3792,6 +4091,22 @@ function bindForms() {
       taskForm.querySelector("input, textarea, select")?.focus();
     });
   });
+
+  document.querySelectorAll("[data-reflection-form]").forEach((reflectionForm) => {
+    reflectionForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!selectedReflectionGoalId) return;
+      const form = new FormData(reflectionForm);
+      const dateVal = String(form.get("date") || "");
+      const textVal = String(form.get("text") || "");
+      if (!dateVal || !textVal.trim()) return;
+      upsertReflection(selectedReflectionGoalId, dateVal, textVal);
+      const dateInput = reflectionForm.querySelector("[data-date-input]");
+      if (dateInput) dateInput.dataset.loadedFor = `${selectedReflectionGoalId}:${dateVal}`;
+      saveAndRender();
+      showSaveStatus("reflection");
+    });
+  });
 }
 
 function saveAndRender() {
@@ -3811,6 +4126,7 @@ function render() {
   renderGoalTaskBoard();
   renderTasks();
   renderHabits();
+  renderReflectionsPage();
   renderDashboardLanes();
   render21DayHabitsSection();
   renderNotificationsSection();

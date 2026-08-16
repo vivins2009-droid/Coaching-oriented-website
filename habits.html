@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Habits | ActionIQ</title>
-  <link rel="stylesheet" href="styles.css?v=metrics2">
+  <link rel="stylesheet" href="styles.css?v=metrics7">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="app.js?v=task-calendar" defer></script>
+  <script src="app.js?v=reflections5" defer></script>
 </head>
 <body data-page="habits">
   <div class="app-shell">
@@ -18,6 +18,7 @@
         <a class="nav-item" href="goals.html">Goals</a>
         <a class="nav-item active" href="habits.html">Habits</a>
         <a class="nav-item" href="tasks.html">Tasks</a>
+        <a class="nav-item" href="reflections.html">Reflections</a>
       </nav>
     </aside>
 
@@ -311,6 +312,7 @@
             <span>Today habit score</span>
             <strong data-metric="habitScore">0%</strong>
             <div class="progress-track"><span data-bar="habitScore"></span></div>
+            <p class="metric-one-liner">Checked off today &divide; scheduled today.</p>
           </div>
         </article>
         <article class="metric-card command-card cadence-card">
@@ -327,6 +329,7 @@
             <span>Done today</span>
             <strong data-metric="checksCompleted">0</strong>
             <p data-copy="habitPlanned">Out of 0 planned</p>
+            <p class="metric-one-liner">Scheduled today AND checked off.</p>
           </div>
         </article>
         <article class="metric-card command-card tower-card">
@@ -340,9 +343,10 @@
             <span>Strongest habit</span>
             <strong data-metric="strongestHabit">None</strong>
             <p data-copy="strongestStreak">0 day streak</p>
+            <p class="metric-one-liner">Max, across habits, of consecutive scheduled days checked off ending today.</p>
           </div>
         </article>
-        <article class="metric-card command-card beacon-card">
+        <article class="metric-card command-card beacon-card is-alert-card">
           <div class="metric-visual beacon-visual" aria-hidden="true">
             <span></span>
             <span></span>
@@ -351,6 +355,7 @@
             <span>Missed today</span>
             <strong data-metric="missedToday">0</strong>
             <p data-metric="recoveryHabit">None</p>
+            <p class="metric-one-liner">Scheduled today AND not checked off.</p>
           </div>
         </article>
       </section>

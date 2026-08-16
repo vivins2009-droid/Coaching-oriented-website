@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reflections | ActionIQ</title>
+  <link rel="stylesheet" href="styles.css?v=metrics7">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="app.js?v=reflections5" defer></script>
+</head>
+<body data-page="reflections">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <nav class="nav-list" aria-label="Main navigation">
+        <a class="nav-item" href="app.html#home">Home</a>
+        <a class="nav-item" href="app.html#dashboard">Dashboard</a>
+        <a class="nav-item" href="goals.html">Goals</a>
+        <a class="nav-item" href="habits.html">Habits</a>
+        <a class="nav-item" href="tasks.html">Tasks</a>
+        <a class="nav-item active" href="reflections.html">Reflections</a>
+      </nav>
+    </aside>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Reflection log</p>
+          <h1>Reflect. Track. Grow.</h1>
+        </div>
+        <div class="top-actions">
+          <button class="text-button link-button" type="button" data-export-reflections>Export to Excel</button>
+          <a class="text-button link-button back-link" href="app.html#dashboard">Back to dashboard</a>
+        </div>
+      </header>
+
+      <section class="panel command-panel reflection-select-panel">
+        <div class="panel-hologram input-hologram" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Choose a goal</p>
+            <h2>What are you reflecting on?</h2>
+          </div>
+        </div>
+        <label class="reflection-goal-label">
+          Goal statement
+          <select data-reflection-goal-select>
+            <option value="">All goals</option>
+          </select>
+        </label>
+        <p class="form-guidance reflection-guidance-spaced">Pick a goal to see its milestones and tasks, then log how you feel about the progress you're making.</p>
+      </section>
+
+      <section class="panel command-panel reflection-goal-overview" data-reflection-overview hidden>
+        <div class="panel-hologram queue-hologram" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Goal snapshot</p>
+            <h2 data-reflection-goal-title>Goal title</h2>
+          </div>
+        </div>
+        <div data-reflection-overview-body></div>
+      </section>
+
+      <section class="panel command-panel reflection-entry-panel" data-reflection-entry hidden>
+        <div class="panel-hologram habit-launch-hologram" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Add reflection</p>
+            <h2>Log your thinking for a date</h2>
+          </div>
+        </div>
+        <form class="entry-form compact-form" data-reflection-form>
+          <div class="form-field date-field" data-date-field data-empty-label="Pick a reflection date">
+            <label for="reflection-date">Reflection date</label>
+            <button class="date-trigger" type="button" data-date-trigger aria-haspopup="dialog" aria-expanded="false" aria-describedby="reflection-date-hint">
+              <span class="date-value" data-date-value id="reflection-date-hint">Pick a reflection date</span>
+              <span class="date-icon" aria-hidden="true"></span>
+            </button>
+            <input id="reflection-date" name="date" type="hidden" data-date-input>
+            <div class="date-popover" data-date-popover hidden role="dialog" aria-label="Choose reflection date"></div>
+          </div>
+          <label class="full-width">
+            Reflection
+            <textarea name="text" rows="5" placeholder="What progress did you make? What got in the way? What's next?" data-reflection-textarea></textarea>
+          </label>
+          <button class="text-button" type="submit">Save reflection</button>
+        </form>
+        <div class="save-guidance" data-save-status="reflection" hidden aria-live="polite">
+          <div>
+            <strong>Reflection saved.</strong>
+            <span>Pick another date to add another entry, or review your log below.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel command-panel reflection-history-panel" data-reflection-history-panel hidden>
+        <div class="panel-hologram queue-hologram" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Reflection log</p>
+            <h2>Past entries</h2>
+          </div>
+        </div>
+        <div class="reflection-history-list" data-reflection-history></div>
+        <div class="empty-state" data-empty="reflections">
+          <strong>No reflections yet.</strong>
+          <span>Select a goal above, pick a date, and write your first entry.</span>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
