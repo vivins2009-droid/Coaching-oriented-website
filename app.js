@@ -3550,8 +3550,12 @@ function setCalendarView(field, date) {
   field.dataset.calendarMonth = String(date.getMonth());
 }
 
+function getFieldPopover(field) {
+  return field._datePopover || field.querySelector("[data-date-popover]");
+}
+
 function closeDateCalendar(field) {
-  const popover = field.querySelector("[data-date-popover]");
+  const popover = getFieldPopover(field);
   const trigger = field.querySelector("[data-date-trigger]");
   if (popover) popover.hidden = true;
   if (trigger) trigger.setAttribute("aria-expanded", "false");
@@ -3566,7 +3570,7 @@ function closeAllDateCalendars(exceptField = null) {
 }
 
 function renderDateCalendar(field) {
-  const popover = field.querySelector("[data-date-popover]");
+  const popover = getFieldPopover(field);
   const input = field.querySelector("[data-date-input]");
   if (!popover || !input) return;
 
@@ -3604,9 +3608,34 @@ function renderDateCalendar(field) {
   `;
 }
 
+function positionDatePopover(field, popover, trigger) {
+  const triggerRect = trigger.getBoundingClientRect();
+  const estimatedHeight = 360;
+  const popWidth = Math.min(292, window.innerWidth - 34);
+  const spaceBelow = window.innerHeight - triggerRect.bottom;
+  const spaceAbove = triggerRect.top;
+  const opensUpward = spaceBelow < estimatedHeight && spaceAbove > spaceBelow;
+  field.classList.toggle("opens-upward", opensUpward);
+  popover.classList.toggle("opens-upward", opensUpward);
+
+  let left = triggerRect.left + triggerRect.width / 2;
+  left = Math.max(popWidth / 2 + 8, Math.min(window.innerWidth - popWidth / 2 - 8, left));
+
+  popover.style.position = "fixed";
+  popover.style.left = `${left}px`;
+  popover.style.transform = "translateX(-50%)";
+  if (opensUpward) {
+    popover.style.top = "auto";
+    popover.style.bottom = `${window.innerHeight - triggerRect.top + 10}px`;
+  } else {
+    popover.style.top = `${triggerRect.bottom + 10}px`;
+    popover.style.bottom = "auto";
+  }
+}
+
 function openDateCalendar(field) {
   closeAllDateCalendars(field);
-  const popover = field.querySelector("[data-date-popover]");
+  const popover = getFieldPopover(field);
   const trigger = field.querySelector("[data-date-trigger]");
   if (!popover || !trigger) return;
   setCalendarView(field, calendarViewDate(field));
@@ -3614,15 +3643,11 @@ function openDateCalendar(field) {
   popover.hidden = false;
   trigger.setAttribute("aria-expanded", "true");
   field.classList.add("is-open");
+  positionDatePopover(field, popover, trigger);
 
-  const triggerRect = trigger.getBoundingClientRect();
-  const estimatedHeight = 360;
-  const spaceBelow = window.innerHeight - triggerRect.bottom;
-  const spaceAbove = triggerRect.top;
-  const opensUpward = spaceBelow < estimatedHeight && spaceAbove > spaceBelow;
-  field.classList.toggle("opens-upward", opensUpward);
   window.requestAnimationFrame(() => {
     trigger.scrollIntoView({ block: "center", behavior: "smooth" });
+    positionDatePopover(field, popover, trigger);
   });
 }
 
@@ -3663,6 +3688,12 @@ function bindDateHints() {
     const popover = field.querySelector("[data-date-popover]");
     if (!input || !trigger || !popover) return;
     field.dataset.dateBound = "true";
+    field._datePopover = popover;
+    // Move the popover to <body> so it's never trapped inside a nested 3D
+    // transform's local stacking context (this app wraps nearly every panel
+    // in transform: translateZ(...)/preserve-3d, which silently defeats
+    // z-index comparisons and position:fixed containment for descendants).
+    document.body.appendChild(popover);
 
     trigger.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -3693,6 +3724,7 @@ function bindDateHints() {
         popover.hidden = false;
         trigger.setAttribute("aria-expanded", "true");
         field.classList.add("is-open");
+        positionDatePopover(field, popover, trigger);
         return;
       }
 
@@ -3709,7 +3741,7 @@ function bindDateHints() {
 
   if (!dateDocumentListenersBound) {
     document.addEventListener("click", (event) => {
-      if (event.target.closest("[data-date-field]")) return;
+      if (event.target.closest("[data-date-field], [data-date-popover]")) return;
       closeAllDateCalendars();
     });
 
